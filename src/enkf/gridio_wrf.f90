@@ -59,8 +59,8 @@ contains
    character(len=max_varname_length), dimension(n2d), intent(in) :: vars2d
    character(len=max_varname_length), dimension(n3d), intent(in) :: vars3d
    integer, dimension(0:n3d), intent(in)        :: levels
-   character(len=120), dimension(7), intent(in) :: fileprefixes
-   character(len=120), dimension(7), intent(in) :: filesfcprefixes
+   character(len=120), dimension(11), intent(in) :: fileprefixes
+   character(len=120), dimension(11), intent(in) :: filesfcprefixes
    logical, intent(in) :: reducedgrid
 
    real(r_single), dimension(npts,ndim,ntimes),  intent(out) :: vargrid
@@ -86,8 +86,8 @@ contains
     character(len=max_varname_length), dimension(n2d), intent(in) :: vars2d
     character(len=max_varname_length), dimension(n3d), intent(in) :: vars3d
     integer, dimension(0:n3d), intent(in) :: levels
-    character(len=120), dimension(7), intent(in)  :: fileprefixes
-    character(len=120), dimension(7), intent(in)  :: filesfcprefixes
+    character(len=120), dimension(11), intent(in)  :: fileprefixes
+    character(len=120), dimension(11), intent(in)  :: filesfcprefixes
 
     ! Define variables returned by subroutine
     real(r_single), dimension(npts,ndim,ntimes,nanal2-nanal1+1),  intent(out) :: vargrid
@@ -441,8 +441,8 @@ contains
     character(len=max_varname_length), dimension(n2d), intent(in) :: vars2d
     character(len=max_varname_length), dimension(n3d), intent(in) :: vars3d
     integer, dimension(0:n3d), intent(in) :: levels
-    character(len=120), dimension(7), intent(in)  :: fileprefixes
-    character(len=120), dimension(7), intent(in)  :: filesfcprefixes
+    character(len=120), dimension(11), intent(in)  :: fileprefixes
+    character(len=120), dimension(11), intent(in)  :: filesfcprefixes
 
     ! Define variables returned by subroutine
     real(r_single),  dimension(npts,ndim,ntimes,nanal2-nanal1+1),  intent(out) :: vargrid

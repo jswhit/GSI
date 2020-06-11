@@ -74,6 +74,8 @@ module gsi_4dvar
 !   idmodel           - Run w/ identity GCM TLM and ADM; test mode
 !
 !   l4densvar         - Logical flag for 4d-ensemble-var option
+!   lhourly_da        - Logical flag for hourly DA wind overlapping windows
+!   liau              - Logical flag for hourly DA with IAU
 !   ens_nhr           - Time between time levels for ensemble (currently same as nhr_obsbins)
 !   ens_fhrlevs       - Forecast length for each time level for ensemble perturbations
 !                       this variable defines the assumed filenames for ensemble
@@ -114,7 +116,7 @@ module gsi_4dvar
   public :: min_offset,iadateend,ibdate,iedate,lanczosave,lbfgsmin
   public :: ladtest,ladtest_obs,lgrtest,lcongrad,nhr_obsbin,nhr_subwin,nwrvecs
   public :: jsiga,ltcost,iorthomax,liauon,lnested_loops
-  public :: l4densvar,ens_nhr,ens_fhrlevs,ens_nstarthr,ibin_anl
+  public :: l4densvar,lhourly_da,liau,ens_nhr,ens_fhrlevs,ens_nstarthr,ibin_anl
   public :: lwrite4danl,thin4d,nhr_anal
   public :: mPEs_observer
   public :: tau_fcst
@@ -136,6 +138,8 @@ module gsi_4dvar
   logical         :: ltcost
   logical         :: liauon
   logical         :: l4densvar
+  logical         :: lhourly_da
+  logical         :: liau
   logical         :: lnested_loops
   logical         :: lwrite4danl
   logical         :: thin4d
@@ -200,6 +204,8 @@ ltlint = .false.
 ltcost = .false.
 liauon = .false.
 l4densvar = .false.
+lhourly_da= .false.
+liau      = .false.
 lnested_loops=.false.
 
 nhr_assimilation=6
@@ -266,7 +272,14 @@ integer(i_kind),intent(in   ) :: mype
 ! local variables
 integer(i_kind) :: ibin,k
 
-winlen = real(nhr_assimilation,r_kind)
+if (lhourly_da) then
+   !if(      liau) winlen = real(4,r_kind) !use hardcoded 4 for overlapping windows and IAU
+   !if(.not. liau) winlen = real(2,r_kind) !use hardcoded 2 for overlapping windows w/out IAU
+   winlen = real(4,r_kind) !use hardcoded 4 for overlapping windows and with/without IAU
+else
+   winlen = real(nhr_assimilation,r_kind)
+endif
+!if (lhourly_da .and..not.liau) min_offset=60._r_kind 
 winoff = real(min_offset/60._r_kind,r_kind)
 
 if (nhr_obsbin>0.and.nhr_obsbin<=nhr_assimilation) then
@@ -285,11 +298,11 @@ end if
 ! Setup observation bins
 IF (hr_obsbin<winlen) THEN
    ibin = NINT(winlen/hr_obsbin)
-   IF (NINT(ibin*hr_obsbin)/=nhr_assimilation) THEN
-      write(6,*)'SETUP_4DVAR: Error=',ibin,hr_obsbin,nhr_assimilation
-      write(6,*)'SETUP_4DVAR: Error in observation binning'
-      call stop2(132)
-   ENDIF
+   !IF (NINT(ibin*hr_obsbin)/=nhr_assimilation) THEN
+   !   write(6,*)'SETUP_4DVAR: Error=',ibin,hr_obsbin,nhr_assimilation
+   !   write(6,*)'SETUP_4DVAR: Error in observation binning'
+   !   call stop2(132)
+   !ENDIF
 ELSE
    ibin = 0
 ENDIF
@@ -298,6 +311,9 @@ if (mype==0)  write(6,*) 'GSI_4DVAR:  nobs_bins = ',nobs_bins
 
 ! Setup weak constraint 4dvar
 if (nhr_subwin<=0) nhr_subwin = nhr_assimilation
+!if (lhourly_da .and.     liau) nhr_subwin = 4 !use hard coded 4 for overlapping windows and IAU
+!if (lhourly_da .and..not.liau) nhr_subwin = 2 !use hard coded 2 for overlapping windows w/out IAU
+if (lhourly_da               ) nhr_subwin = 4 !use hard coded 4 for overlapping windows and IAU
 winsub = real(nhr_subwin,r_kind)
 
 IF (nhr_subwin<nhr_assimilation) THEN
@@ -345,7 +361,13 @@ if ( l4densvar ) then
       write(6,'(A)')' SETUP_4DVAR: 4densvar mode, resetting nsubwin to 1'
    nsubwin = 1
 
-   ibin_anl = (nhr_assimilation/(2*nhr_obsbin))+1
+   if (lhourly_da) then
+      !if(      liau) ibin_anl = 4 !use hardcoded 4 for overlapping windows and IAU
+      !if(.not. liau) ibin_anl = 2 !use hardcoded 2 for overlapping windows w/out IAU
+      ibin_anl = 4 !use hardcoded 4 for overlapping windows and IAU
+   else
+      ibin_anl = (nhr_assimilation/(2*nhr_obsbin))+1
+   end if
    if ( mype == 0 ) &
       write(6,'(A,I4)')' SETUP_4DVAR: 4densvar mode, ibin_anl = ', ibin_anl
 
@@ -380,6 +402,8 @@ endif
 if (mype==0) then
    write(6,*)'SETUP_4DVAR: l4dvar=',l4dvar
    write(6,*)'SETUP_4DVAR: l4densvar=',l4densvar
+   write(6,*)'SETUP_4DVAR: lhourly_da=',lhourly_da
+   write(6,*)'SETUP_4DVAR: liau      =',liau
    write(6,*)'SETUP_4DVAR: winlen=',winlen
    write(6,*)'SETUP_4DVAR: winoff=',winoff
    write(6,*)'SETUP_4DVAR: hr_obsbin=',hr_obsbin

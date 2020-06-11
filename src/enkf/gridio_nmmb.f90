@@ -26,7 +26,7 @@ character(len=max_varname_length), dimension(n3d), intent(in) :: vars3d
 integer, intent(in) :: n2d,n3d
 integer, dimension(0:n3d), intent(in) :: levels
 integer, intent(in) :: ndim, ntimes
-character(len=120), dimension(7), intent(in)  :: fileprefixes
+character(len=120), dimension(11), intent(in)  :: fileprefixes
 logical, intent(in) :: reducedgrid
 real(r_single), dimension(npts,ndim,ntimes,nanal2-nanal1+1), intent(out) :: grdin
 real(r_double), dimension(npts,nlevs,ntimes,nanal2-nanal1+1), intent(out) :: qsat

@@ -1644,6 +1644,7 @@ contains
     use mpimod, only: mype
     use kinds, only: r_kind,i_kind,r_single
     use gridmod, only: nlat,nlon
+    use gsi_4dvar, only: lhourly_da,liau
     use constants, only: zero
     use nemsio_module, only:  nemsio_init,nemsio_open,nemsio_close
     use nemsio_module, only:  nemsio_gfile,nemsio_getfilehead,nemsio_readrecv
@@ -1680,7 +1681,12 @@ contains
     if (iret /= 0) call error_msg(trim(my_name),null,null,'init',istop,iret)
 
 
-    filename='sfcf06_anlgrid'
+    if (lhourly_da) then
+       if(      liau) filename='sfcf04_anlgrid'
+       if(.not. liau) filename='sfcf02_anlgrid'
+    else
+       filename='sfcf06_anlgrid'
+    end if
     call nemsio_open(gfile,trim(filename),'READ',iret=iret)
     if (iret /= 0) call error_msg(trim(my_name),trim(filename),null,'open',istop,iret)
 
@@ -4319,6 +4325,8 @@ contains
 
     use general_commvars_mod, only: ltosi,ltosj
 
+    use gsi_4dvar, only: lhourly_da,liau
+
     use obsmod, only: iadate
 
     use constants, only: zero
@@ -4341,7 +4349,8 @@ contains
 !-------------------------------------------------------------------------
 
 !   Declare local parameters
-    character( 6),parameter:: fname_ges='sfcf06'
+    !character( 6),parameter:: fname_ges='sfcf06'
+    character( 6)          :: fname_ges
 !   Declare local variables
     character(len=120) :: my_name = 'WRITE_NEMSSFC'
     character(len=1)   :: null = ' '
@@ -4363,6 +4372,14 @@ contains
 
     type(nemsio_gfile) :: gfile, gfileo
 !*****************************************************************************
+
+!   Determine fname_ges
+    if (lhourly_da) then
+       if(      liau) fname_ges='sfcf04'
+       if(.not. liau) fname_ges='sfcf02'
+    else
+       fname_ges='sfcf06'
+    end if
 
 !   Initialize local variables
     mm1=mype+1
@@ -4560,6 +4577,7 @@ contains
 
     use guess_grids, only: isli2
     use gsi_nstcouplermod, only: nst_gsi,zsea1,zsea2
+    use gsi_4dvar, only: lhourly_da,liau
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use nemsio_module, only:  nemsio_init,nemsio_open,nemsio_close,nemsio_readrecv
@@ -4578,11 +4596,13 @@ contains
 !-------------------------------------------------------------------------
 
 !   Declare local parameters
-    character(6), parameter:: fname_sfcges = 'sfcf06'
+    !character(6), parameter:: fname_sfcges = 'sfcf06'
+    character(6)           :: fname_sfcges
     character(6), parameter:: fname_sfcgcy = 'sfcgcy'
     character(6), parameter:: fname_sfctsk = 'sfctsk'
     character(6), parameter:: fname_sfcanl = 'sfcanl'
-    character(6), parameter:: fname_nstges = 'nstf06'
+    !character(6), parameter:: fname_nstges = 'nstf06'
+    character(6)           :: fname_nstges
     character(6), parameter:: fname_nstanl = 'nstanl'
     character(6), parameter:: fname_dtfanl = 'dtfanl'
 
@@ -4626,6 +4646,17 @@ contains
     type(nemsio_gfile) :: gfile_sfcges,gfile_sfcgcy,gfile_nstges,gfile_sfctsk,gfile_sfcanl,gfile_nstanl
 
 !*****************************************************************************
+
+!   Determine fname_ges
+    if (lhourly_da) then
+       if(      liau) fname_sfcges = 'sfcf04'
+       if(      liau) fname_nstges = 'nstf04'
+       if(.not. liau) fname_sfcges = 'sfcf02'
+       if(.not. liau) fname_nstges = 'nstf02'
+    else
+       fname_sfcges = 'sfcf06'
+       fname_nstges = 'nstf06'
+    end if
 
 !   Initialize local variables
     mm1=mype+1

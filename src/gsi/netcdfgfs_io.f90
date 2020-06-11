@@ -1196,6 +1196,7 @@ contains
     use mpimod, only: mype
     use kinds, only: r_kind,i_kind,r_single
     use gridmod, only: nlat,nlon
+    use gsi_4dvar, only: lhourly_da,liau
     use constants, only: zero
     use module_fv3gfs_ncio, only: Dataset, Variable, Dimension, open_dataset,&
                            close_dataset, get_dim, read_vardata, get_idate_from_time_units 
@@ -1221,7 +1222,12 @@ contains
 
 !-----------------------------------------------------------------------------
 
-    filename='sfcf06_anlgrid'
+    if (lhourly_da) then
+       if(      liau) filename='sfcf04_anlgrid'
+       if(.not. liau) filename='sfcf02_anlgrid'
+    else
+       filename='sfcf06_anlgrid'
+    end if
     ! open the netCDF file
     sfcges = open_dataset(filename)
     ! get dimension sizes
@@ -2298,6 +2304,7 @@ contains
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use general_commvars_mod, only: ltosi,ltosj
+    use gsi_4dvar, only: lhourly_da,liau
 
     use obsmod, only: iadate
 
@@ -2322,7 +2329,8 @@ contains
 !-------------------------------------------------------------------------
 
 !   Declare local parameters
-    character( 6),parameter:: fname_ges='sfcf06'
+    !character( 6),parameter:: fname_ges='sfcf06'
+    character( 6)          :: fname_ges
 !   Declare local variables
     character(len=120) :: my_name = 'WRITE_GFSNCSFC'
     integer(i_kind),dimension(6):: jdate
@@ -2342,6 +2350,14 @@ contains
     character(len=nf90_max_name) :: time_units
 
 !*****************************************************************************
+
+!   Determine fname_ges
+    if (lhourly_da) then
+       if(      liau) fname_ges='sfcf04'
+       if(.not. liau) fname_ges='sfcf02'
+    else
+       fname_ges='sfcf06'
+    end if
 
 !   Initialize local variables
     mm1=mype+1
@@ -2509,6 +2525,7 @@ contains
 
     use guess_grids, only: isli2
     use gsi_nstcouplermod, only: nst_gsi,zsea1,zsea2
+    use gsi_4dvar, only: lhourly_da,liau
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use module_fv3gfs_ncio, only: open_dataset, close_dataset, Dimension, Dataset,&
@@ -2528,11 +2545,13 @@ contains
 !-------------------------------------------------------------------------
 
 !   Declare local parameters
-    character(6), parameter:: fname_sfcges = 'sfcf06'
+    !character(6), parameter:: fname_sfcges = 'sfcf06'
+    character(6)           :: fname_sfcges
     character(6), parameter:: fname_sfcgcy = 'sfcgcy'
     character(6), parameter:: fname_sfctsk = 'sfctsk'
     character(6), parameter:: fname_sfcanl = 'sfcanl'
-    character(6), parameter:: fname_nstges = 'nstf06'
+    !character(6), parameter:: fname_nstges = 'nstf06'
+    character(6)           :: fname_nstges
     character(6), parameter:: fname_nstanl = 'nstanl'
     character(6), parameter:: fname_dtfanl = 'dtfanl'
 
@@ -2574,6 +2593,17 @@ contains
     character(len=nf90_max_name) :: time_units
 
 !*****************************************************************************
+
+!   Determine fname_ges
+    if (lhourly_da) then
+       if(      liau) fname_sfcges = 'sfcf04'
+       if(      liau) fname_nstges = 'nstf04'
+       if(.not. liau) fname_sfcges = 'sfcf02'
+       if(.not. liau) fname_nstges = 'nstf02'
+    else
+       fname_sfcges = 'sfcf06'
+       fname_nstges = 'nstf06'
+    end if
 
 !   Initialize local variables
     mm1=mype+1

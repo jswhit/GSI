@@ -56,13 +56,13 @@ integer(i_kind), public, parameter :: nsatmax_oz = 100
 character(len=20), public, dimension(nsatmax_rad) ::sattypes_rad, dsis
 character(len=20), public, dimension(nsatmax_oz) ::sattypes_oz
 ! forecast times for first-guess forecasts to be updated (in hours)
-integer,dimension(7),public ::  nhr_anal  = (/6,-1,-1,-1,-1,-1,-1/)
-integer,dimension(7),public ::  nhr_state = (/6,-1,-1,-1,-1,-1,-1/)
+integer,dimension(11),public ::  nhr_anal  = (/6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1/)
+integer,dimension(11),public ::  nhr_state = (/6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1/)
 ! forecast hour at middle of assimilation window
 real(r_single),public :: fhr_assim=6.0
 ! character string version of nhr_anal with leading zeros.
-character(len=2),dimension(7),public :: charfhr_anal
-character(len=2),dimension(7),public :: charfhr_state
+character(len=2),dimension(11),public :: charfhr_anal
+character(len=2),dimension(11),public :: charfhr_state
 ! prefix for background and analysis file names (mem### appended)
 ! For global, default is "sfg_"//datestring//"_fhr##_" and
 ! "sanl_"//datestring//"_fhr##_". If only one time level
@@ -70,12 +70,12 @@ character(len=2),dimension(7),public :: charfhr_state
 ! For regional, default is "firstguess_fhr##." and
 ! "analysis_fhr##." If only one time level
 ! in background, default is "firstguess." and "analysis.".
-character(len=120),dimension(7),public :: fgfileprefixes
-character(len=120),dimension(7),public :: fgsfcfileprefixes
-character(len=120),dimension(7),public :: statefileprefixes
-character(len=120),dimension(7),public :: statesfcfileprefixes
-character(len=120),dimension(7),public :: anlfileprefixes
-character(len=120),dimension(7),public :: incfileprefixes
+character(len=120),dimension(11),public :: fgfileprefixes
+character(len=120),dimension(11),public :: fgsfcfileprefixes
+character(len=120),dimension(11),public :: statefileprefixes
+character(len=120),dimension(11),public :: statesfcfileprefixes
+character(len=120),dimension(11),public :: anlfileprefixes
+character(len=120),dimension(11),public :: incfileprefixes
 ! analysis date string (YYYYMMDDHH)
 character(len=10), public ::  datestring
 ! filesystem path to input files (first-guess, GSI diagnostic files).
