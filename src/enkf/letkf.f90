@@ -263,12 +263,20 @@ nobslocal_min = nobstot
 
 ! Update ensemble on model grid.
 ! Loop for each horizontal grid points on this task.
-!$omp parallel do schedule(dynamic) private(npt,nob,nobsl, &
+!$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
 !$omp                  nobsl2,oberrfact,ngrd1,corrlength,ens_tmp, &
 !$omp                  nf,vdist,obens,indxassim,indxob, &
 !$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
-!$omp                  oindex,deglat,dist,corrsq,nb,sresults, &
-!$omp                  wts_ensperts,pa,trpa,trpa_raw) &
+!$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
+!$omp                  wts_ensperts,pa,trpa,trpa_raw) shared(anal_ob, &
+!$omp                  anal_ob_modens,anal_chunk,obsprd_post,obsprd_prior, &
+!$omp                  oberrvar,oberrvaruse,nobsl_max,grdloc_chunk, &
+!$omp                  obloc,corrlengthnh,corrlengthsh,corrlengthtr,&
+!$omp                  vlocal_evecs,vlocal,oblnp,lnp_chunk,lnsigl,corrlengthsq,&
+!$omp                  getkf,denkf,getkf_inflation,ensmean_chunk,ob,ensmean_ob, &
+!$omp                  nproc,numptsperproc,nnmax,r_nanalsm1,kdtree_obs2,kdobs, &
+!$omp                  lupd_obspace_serial,eps,dfs_sort,nanals,index_pres,&
+!$omp  neigv,nlevs,lonsgrd,latsgrd,nobstot,nens,ncdim,nbackgrounds,indxproc,rad2deg) &
 !$omp  reduction(+:t1,t2,t3,t4,t5) &
 !$omp  reduction(max:nobslocal_max) &
 !$omp  reduction(min:nobslocal_min) 
@@ -345,7 +353,6 @@ grdloop: do npt=1,numptsperproc(nproc+1)
           else
              ! brute force search
              call find_localobs(grdloc_chunk(:,npt),obloc,corrsq,nobstot,nobsl_max,sresults,nobsl)
-             nobsl_max = nobsl
           endif
           !if (nproc == 0 .and. npt == 1) then
           !   do nob=1,nobsl
@@ -490,7 +497,9 @@ end do grdloop
 
 ! make sure posterior perturbations still have zero mean.
 ! (roundoff errors can accumulate)
-!$omp parallel do schedule(dynamic) private(npt,nb,i)
+!$omp parallel do schedule(dynamic) default(none) private(npt,nb,i) &
+!$omp                               shared(anal_chunk,r_nanals,nanals,&
+!$omp                               npts_max,nbackgrounds,ncdim)
 do npt=1,npts_max
    do nb=1,nbackgrounds
       do i=1,ncdim
@@ -634,6 +643,7 @@ subroutine letkf_core(nobsl,hxens,hxens_orig,dep,&
 !$$$ end documentation block
 
 implicit none
+logical, intent(in) :: getkf_inflation,denkf,getkf
 integer(i_kind), intent(in) :: nobsl,nanals,neigv
 real(r_kind),dimension(nobsl),intent(in ) :: rdiaginv,rloc
 real(r_kind),dimension(nanals,nobsl),intent(inout)  :: hxens
@@ -654,7 +664,6 @@ integer(i_kind) isuppz(2*nanals)
 real(r_kind) vl,vu,normfact
 integer(i_kind), allocatable, dimension(:) :: iwork
 real(r_kind), dimension(:), allocatable :: work1
-logical, intent(in) :: getkf_inflation,denkf,getkf
 
 if (neigv < 1) then
   print *,'neigv must be >=1 in letkf_core'
