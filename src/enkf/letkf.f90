@@ -138,7 +138,7 @@ integer(i_kind) nobsl, ngrd1, nobsl2, nthreads, nb, &
                 nobslocal_min,nobslocal_max, &
                 nobslocal_minall,nobslocal_maxall
 integer(i_kind),allocatable,dimension(:) :: oindex
-real(r_single) :: deglat, dist, corrsq, oberrfact, trpa, trpa_raw
+real(r_single) :: deglat, dist, corrsq, oberrfact, trpa, trpa_raw, maxdfs
 real(r_double) :: t1,t2,t3,t4,t5,tbegin,tend,tmin,tmax,tmean
 real(r_kind) r_nanals,r_nanalsm1
 real(r_kind) normdepart, pnge, width
@@ -265,7 +265,7 @@ nobslocal_min = nobstot
 ! Loop for each horizontal grid points on this task.
 !$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
 !$omp                  nobsl2,oberrfact,ngrd1,corrlength,ens_tmp, &
-!$omp                  nf,vdist,obens,indxassim,indxob, &
+!$omp                  nf,vdist,obens,indxassim,indxob,maxdfs, &
 !$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
 !$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
 !$omp                  wts_ensperts,pa,trpa,trpa_raw) shared(anal_ob, &
@@ -312,6 +312,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
           allocate(indxob(nobstot))
           ! calculate integrated 1-DFS for each ob in local volume
           nobsl = 0
+          maxdfs = -9.9e31
           do nob=1,nobstot
              rloc(nob) = sum((obloc(:,nob)-grdloc_chunk(:,npt))**2,1)
              dist = sqrt(rloc(nob)/corrlengthsq(nob))
@@ -319,22 +320,16 @@ grdloop: do npt=1,numptsperproc(nproc+1)
                  oberrvaruse(nob) < 1.e10_r_single) then
                 nobsl = nobsl + 1
                 indxob(nobsl) = nob
-                oberrfact = taper(dist)
-                if (lupd_obspace_serial) then
-                   ! use updated ensemble in ob space to estimate DFS
-                   !dfs(nobsl) = obsprd_post(nob)/obsprd_prior(nob)
-                   ! weight by distance to analysis point
-                   dfs(nobsl) = oberrfact*obsprd_post(nob)/obsprd_prior(nob)
-                else
-                   ! estimate DFS assuming each ob assimilated independently, one
-                   ! at a time.
-                   ! 1-DFS = HP_aH^T/HP_bH^T = R/(HP_bH^T + R)
-                   dfs(nobsl) = (oberrvaruse(nob)/oberrfact)/((oberrvar(nob)/oberrfact)+obsprd_prior(nob))
-                endif
+                ! use updated ensemble in ob space to compute DFS
+                ! DFS = Tr(R**-1*HPaHT) = dy_a/dy_o see eqn 4 in Liu et al 2009
+                ! https://rmets.onlinelibrary.wiley.com/doi/epdf/10.1002/qj.511
+                dfs(nobsl) = obsprd_post(nob)/oberrvaruse(nob)
+                if (dfs(nobsl) > maxdfs) maxdfs = dfs(nobsl)
              endif
           enddo
-          ! sort on 1-DFS
+          ! sort on max(DFS)-DFS
           allocate(indxassim(nobsl))
+          dfs = maxdfs-dfs
           call quicksort(nobsl,dfs(1:nobsl),indxassim)
           nobsl2 = min(nobsl_max,nobsl)
           do nob=1,nobsl2

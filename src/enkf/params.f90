@@ -582,6 +582,10 @@ if (nproc == 0) then
      print *,'lupd_satbiasc not supported with LETKF'
      call stop2(19)
    endif
+   if (dfs_sort .and. letkf_flag .and. .not. lupd_obspace_serial) then
+     print *,'lupd_obspace_serial must be true if dfs_sort is true'
+     call stop2(19)
+   endif
    if (use_correlated_oberrs .and. .not. netcdf_diag) then
      print *,'use_correlated_oberrs only works with netcdf_diag'
      call stop2(19)
