@@ -326,6 +326,10 @@ if (nproc <= ntasks_io-1) then
                 minval(grdin_mean(:,clevels(nc3d) + nvar)),                &
                 maxval(grdin_mean(:,clevels(nc3d) + nvar))
          enddo
+         if (maxval(abs(grdin_mean)) > 100) then
+             print *,'crazy increment, aborting...'
+             call stop2(503)
+         endif
       endif
    enddo
 100 format('ens. mean anal. increment min/max  ',a,2x,g19.12,2x,g19.12)
