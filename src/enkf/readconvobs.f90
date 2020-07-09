@@ -31,7 +31,7 @@ module readconvobs
 
 use kinds, only: r_kind,i_kind,r_single,r_double
 use constants, only: one,zero,deg2rad
-use params, only: npefiles, netcdf_diag, modelspace_vloc
+use params, only: npefiles, netcdf_diag, modelspace_vloc, compute_dfs
 implicit none
 
 private
@@ -51,7 +51,7 @@ subroutine get_num_convobs(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
 
    character(len=500), intent(in)  :: obspath
    character(len=10),  intent(in)  :: datestring
-   character(len=10),  intent(in)  :: id
+   character(len=12),  intent(in)  :: id
    integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
 
    if (netcdf_diag) then
@@ -67,7 +67,7 @@ subroutine get_num_convobs_bin(obspath,datestring,num_obs_tot,num_obs_totdiag,id
     implicit none
     character(len=500), intent(in)  :: obspath
     character(len=10),  intent(in)  :: datestring
-    character(len=10),  intent(in)  :: id
+    character(len=12),  intent(in)  :: id
     integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
 
     character(len=500) :: obsfile
@@ -249,7 +249,7 @@ subroutine get_num_convobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
 
   character(len=500), intent(in)  :: obspath
   character(len=10),  intent(in)  :: datestring
-  character(len=10),  intent(in)  :: id
+  character(len=12),  intent(in)  :: id
   integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
 
   character(len=500) :: obsfile
@@ -428,7 +428,7 @@ subroutine get_convobs_data(obspath, datestring, nobs_max, nobs_maxdiag,   &
   character(len=20), dimension(nobs_max), intent(out) :: x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=10), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer, intent(in)           :: nanal, nmem
 
   if (netcdf_diag) then
@@ -478,13 +478,13 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
   character(len=20), dimension(nobs_max), intent(out) :: x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=10), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer, intent(in)           :: nanal, nmem
 
   real(r_double) t1,t2,tsum
   character(len=4) pe_name
   character*500 obsfile, obsfile2
-  character(len=10) :: id2
+  character(len=12) :: id2
 
   type(sparr2)    :: dhx_dx_read
   type(sparr)     :: dhx_dx
@@ -522,7 +522,11 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
   eps = 1.e-3
 
   twofiles = (.not. lobsdiag_forenkf) .and. (nanal <= nanals)
-  id2 = 'ensmean'
+  if (compute_dfs) then
+     id2 = 'ensmean_dfs'
+  else
+     id2 = 'ensmean'
+  endif
   if (nanal <= nanals) then
      write(id2,'(a3,(i3.3))') 'mem',nanal
   endif
@@ -949,13 +953,13 @@ subroutine get_convobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag,   &
   character(len=20), dimension(nobs_max), intent(out) :: x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=10), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer, intent(in)           :: nanal, nmem
 
   real(r_double) t1,t2,tsum
   character(len=4) pe_name
   character*500 obsfile, obsfile2
-  character(len=10) :: id2
+  character(len=12) :: id2
 
   type(sparr2)    :: dhx_dx_read
   type(sparr)     :: dhx_dx
@@ -987,7 +991,11 @@ subroutine get_convobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag,   &
   iunit2 = 17
 
   twofiles = (.not. lobsdiag_forenkf) .and. (nanal <= nanals)
-  id2 = 'ensmean'
+  if (compute_dfs) then
+     id2 = 'ensmean_dfs'
+  else
+     id2 = 'ensmean'
+  endif
   if (nanal <= nanals) then
      write(id2,'(a3,(i3.3))') 'mem',nanal
   endif
@@ -1388,7 +1396,7 @@ subroutine write_convobs_data(obspath, datestring, nobs_max, nobs_maxdiag, &
   real(r_single), dimension(nobs_max), intent(in)      :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
 
-  character(len=10), intent(in) :: id, id2, gesid2
+  character(len=12), intent(in) :: id, id2, gesid2
 
   if (netcdf_diag) then
     call write_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
@@ -1412,7 +1420,7 @@ subroutine write_convobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag, &
   real(r_single), dimension(nobs_max), intent(in)      :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
 
-  character(len=10), intent(in) :: id, id2, gesid2
+  character(len=12), intent(in) :: id, id2, gesid2
 
 
   character*500 obsfile,obsfile2
@@ -1569,7 +1577,7 @@ subroutine write_convobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag, &
 subroutine write_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
                                  x_fit, x_sprd, x_used, id, gesid)
   use netcdf, only: nf90_inq_dimid, nf90_open, nf90_close, NF90_NETCDF4, &
-                    nf90_inquire_dimension, NF90_WRITE, nf90_create, nf90_def_dim
+                    nf90_inquire_dimension, NF90_NOWRITE, NF90_WRITE, nf90_create, nf90_def_dim
   use ncdw_climsg, only: nclayer_check
 
   use constants, only: r_missing
@@ -1583,7 +1591,7 @@ subroutine write_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
   real(r_single), dimension(nobs_max), intent(in)      :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
 
-  character(len=10), intent(in) :: id, gesid
+  character(len=12), intent(in) :: id, gesid
 
   character*500 obsfile, obsfile2
   character(len=4) pe_name
@@ -1624,7 +1632,7 @@ subroutine write_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
         inquire(file=obsfile,exist=fexist)
         if (.not. fexist) cycle peloop
 
-        call nclayer_check(nf90_open(obsfile, NF90_WRITE, iunit, cache_size = 2147483647))
+        call nclayer_check(nf90_open(obsfile, NF90_NOWRITE, iunit, cache_size = 2147483647))
         call nclayer_check(nf90_inq_dimid(iunit, "nobs", nobsid))
         call nclayer_check(nf90_inquire_dimension(iunit, nobsid, len = nobs))
         call nclayer_check(nf90_close(iunit))

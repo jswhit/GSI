@@ -138,7 +138,7 @@ integer(i_kind) nobsl, ngrd1, nobsl2, nthreads, nb, &
                 nobslocal_min,nobslocal_max, &
                 nobslocal_minall,nobslocal_maxall
 integer(i_kind),allocatable,dimension(:) :: oindex
-real(r_single) :: deglat, dist, corrsq, oberrfact, trpa, trpa_raw, maxdfs
+real(r_single) :: deglat, dist, corrsq, trpa, trpa_raw, maxdfs
 real(r_double) :: t1,t2,t3,t4,t5,tbegin,tend,tmin,tmax,tmean
 real(r_kind) r_nanals,r_nanalsm1
 real(r_kind) normdepart, pnge, width
@@ -264,7 +264,7 @@ nobslocal_min = nobstot
 ! Update ensemble on model grid.
 ! Loop for each horizontal grid points on this task.
 !$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
-!$omp                  nobsl2,oberrfact,ngrd1,corrlength,ens_tmp, &
+!$omp                  nobsl2,ngrd1,corrlength,ens_tmp, &
 !$omp                  nf,vdist,obens,indxassim,indxob,maxdfs, &
 !$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
 !$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
@@ -324,7 +324,9 @@ grdloop: do npt=1,numptsperproc(nproc+1)
                 ! DFS = Tr(R**-1*HPaHT) = dy_a/dy_o see eqn 4 in Liu et al 2009
                 ! https://rmets.onlinelibrary.wiley.com/doi/epdf/10.1002/qj.511
                 dfs(nobsl) = obsprd_post(nob)/oberrvaruse(nob)
-                if (dfs(nobsl) > maxdfs) maxdfs = dfs(nobsl)
+                ! use spread reduction instead.
+                !dfs(nobsl) = obsprd_post(nob)/obsprd_prior(nob)
+                !if (dfs(nobsl) > maxdfs) maxdfs = dfs(nobsl)
              endif
           enddo
           ! sort on max(DFS)-DFS

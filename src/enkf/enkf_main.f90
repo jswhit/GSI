@@ -76,15 +76,16 @@ program enkf_main
  ! reads namelist parameters.
  use params, only : read_namelist,cleanup_namelist,letkf_flag,readin_localization,lupd_satbiasc,&
                     numiter, nanals, lupd_obspace_serial, write_spread_diag,   &
-                    lobsdiag_forenkf, netcdf_diag, fso_cycling, ntasks_io
+                    lobsdiag_forenkf, netcdf_diag, fso_cycling, ntasks_io, &
+                    compute_dfs
  ! mpi functions and variables.
  use mpisetup, only:  mpi_initialize, mpi_initialize_io, mpi_cleanup, nproc, &
                        mpi_wtime
  ! obs and ob priors, associated metadata.
  use enkf_obsmod, only : readobs, write_obsstats, obfit_prior, obsprd_prior, &
                     nobs_sat, obfit_post, obsprd_post, obsmod_cleanup
- ! innovation statistics.
- use innovstats, only: print_innovstats
+ ! innovation and DFS statistics.
+ use innovstats, only: print_innovstats, print_dfs
  ! model control vector 
  use controlvec, only: read_control, write_control, controlvec_cleanup, &
                      init_controlvec
@@ -166,11 +167,34 @@ program enkf_main
     call destroy_observer_enkf()
  endif
 
+ ! print DFS stats and stop if compute_dfs=T
+ if (compute_dfs) then
+    if (nproc == 0) then
+       print *,'DFS stats:'
+       call print_dfs(obsprd_prior) 
+    endif
+ endif
+
  ! print innovation statistics for prior on root task.
  if (nproc == 0) then
-    print *,'innovation statistics for prior:'
-    call print_innovstats(obfit_prior, obsprd_prior)
- end if
+    if (compute_dfs) then
+       print *,'innovation statistics for posterior:'
+       call print_innovstats(obfit_prior, obsprd_prior)
+       t1 = mpi_wtime()
+       if (write_spread_diag) then
+          call write_obsstats()
+       endif
+       t2 = mpi_wtime()
+       if (nproc == 0) print *,'time in write_obsstats =',t2-t1,'on proc',nproc
+    else
+       print *,'innovation statistics for prior:'
+       call print_innovstats(obfit_prior, obsprd_prior)
+    endif
+ endif
+ if (compute_dfs) then
+    call obsmod_cleanup()
+    go to 999
+ endif
 
  ! read state/control vector info from anavinfo
  call init_controlvec()
@@ -266,6 +290,7 @@ program enkf_main
  t2 = mpi_wtime()
  if (nproc == 0) print *,'time in write_control =',t2-t1,'on proc',nproc
 
+999 continue
  call controlvec_cleanup()
  call loadbal_cleanup()
  if(fso_cycling) call destroy_ob_sens()

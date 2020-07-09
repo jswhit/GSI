@@ -27,7 +27,7 @@ module readozobs
 !$$$
 
 use kinds, only: r_single,i_kind,r_kind,r_double
-use params, only: nsats_oz,sattypes_oz,npefiles,netcdf_diag,modelspace_vloc
+use params, only: nsats_oz,sattypes_oz,npefiles,netcdf_diag,modelspace_vloc,compute_dfs
 use constants, only: deg2rad, zero
 implicit none
 
@@ -41,7 +41,7 @@ subroutine get_num_ozobs(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
    implicit none
    character(len=500), intent(in)  :: obspath
    character(len=10),  intent(in)  :: datestring
-   character(len=10),  intent(in)  :: id
+   character(len=12),  intent(in)  :: id
    integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
 
    if (netcdf_diag) then
@@ -56,7 +56,7 @@ subroutine get_num_ozobs_bin(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
     implicit none
     character(len=500), intent(in)  :: obspath
     character(len=10),  intent(in)  :: datestring
-    character(len=8),   intent(in)  :: id
+    character(len=12),   intent(in)  :: id
     integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
 
     character(len=500) :: obsfile
@@ -153,7 +153,7 @@ subroutine get_num_ozobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
     character(len=500), intent(in)  :: obspath
     character(len=10),  intent(in)  :: datestring
     integer(i_kind),    intent(out) :: num_obs_tot, num_obs_totdiag
-    character(len=8),   intent(in)  :: id
+    character(len=12),   intent(in)  :: id
 
     character(len=500) obsfile
     character(len=4) pe_name
@@ -253,7 +253,7 @@ subroutine get_ozobs_data(obspath, datestring, nobs_max, nobs_maxdiag, hx_mean, 
   character(len=20), dimension(nobs_max), intent(out)   ::  x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=8), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer(i_kind), intent(in)  :: nanal, nmem
 
    if (netcdf_diag) then
@@ -294,11 +294,11 @@ subroutine get_ozobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag, hx_me
   character(len=20), dimension(nobs_max), intent(out)   ::  x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=8), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer(i_kind), intent(in)  :: nanal, nmem
 
   character*500    :: obsfile, obsfile2
-  character(len=8) :: id2
+  character(len=12) :: id2
   character(len=4) :: pe_name
 
   integer(i_kind) :: nlevsoz  ! number of levels (layer amounts + total column) per obs   
@@ -333,7 +333,11 @@ subroutine get_ozobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag, hx_me
   eps = 1.e-3
 
   twofiles = (.not. lobsdiag_forenkf) .and. (nanal <= nanals)
-  id2 = 'ensmean'
+  if (compute_dfs) then
+     id2 = 'ensmean_dfs'
+  else
+     id2 = 'ensmean'
+  endif
   if (nanal <= nanals) then
      write(id2,'(a3,(i3.3))') 'mem',nanal
   endif
@@ -572,11 +576,11 @@ subroutine get_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, hx_mea
   character(len=20), dimension(nobs_max), intent(out)   :: x_type
   integer(i_kind), dimension(nobs_maxdiag), intent(out) :: x_used
 
-  character(len=8), intent(in) :: id
+  character(len=12), intent(in) :: id
   integer(i_kind), intent(in)  :: nanal, nmem
 
   character*500    :: obsfile, obsfile2
-  character(len=8) :: id2
+  character(len=12) :: id2
   character(len=4) :: pe_name
 
   integer(i_kind) :: nobs_curr, nob, nobdiag, i, nsat, ipe, nnz, nind, nprof
@@ -612,7 +616,11 @@ subroutine get_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, hx_mea
   eps = 1.e-3
 
   twofiles = (.not. lobsdiag_forenkf) .and. (nanal <= nanals)
-  id2 = 'ensmean'
+  if (compute_dfs) then
+     id2 = 'ensmean_dfs'
+  else
+     id2 = 'ensmean'
+  endif
   if (nanal <= nanals) then
      write(id2,'(a3,(i3.3))') 'mem',nanal
   endif
@@ -805,7 +813,7 @@ implicit none
   integer(i_kind), intent(in) :: nobs_max, nobs_maxdiag
   real(r_single),  dimension(nobs_max),     intent(in) :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
-  character(len=8), intent(in) :: id, id2, gesid2
+  character(len=12), intent(in) :: id, id2, gesid2
 
   if (netcdf_diag) then
     call write_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, x_fit, x_sprd, x_used, id, gesid2)
@@ -823,7 +831,7 @@ subroutine write_ozobs_data_bin(obspath, datestring, nobs_max, nobs_maxdiag, x_f
   integer(i_kind), intent(in) :: nobs_max, nobs_maxdiag
   real(r_single),  dimension(nobs_max),     intent(in) :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
-  character(len=8), intent(in) :: id, id2, gesid2
+  character(len=12), intent(in) :: id, id2, gesid2
 
   character*500 :: obsfile, obsfile2
   character(len=4) pe_name
@@ -926,7 +934,7 @@ end subroutine write_ozobs_data_bin
 subroutine write_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
                                  x_fit, x_sprd, x_used, id, gesid)
   use netcdf, only: nf90_inq_dimid, nf90_open, nf90_close, NF90_NETCDF4, &
-                    nf90_inquire_dimension, NF90_WRITE, nf90_create, nf90_def_dim
+                    nf90_inquire_dimension, NF90_NOWRITE, NF90_WRITE, nf90_create, nf90_def_dim
   use ncdw_climsg, only: nclayer_check
 
   use constants, only: r_missing
@@ -937,7 +945,7 @@ subroutine write_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
   integer(i_kind), intent(in) :: nobs_max, nobs_maxdiag
   real(r_single),  dimension(nobs_max),     intent(in) :: x_fit, x_sprd
   integer(i_kind), dimension(nobs_maxdiag), intent(in) :: x_used
-  character(len=8), intent(in) :: id, gesid
+  character(len=12), intent(in) :: id, gesid
 
 
   character*500 obsfile, obsfile2
@@ -972,7 +980,7 @@ subroutine write_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
          inquire(file=obsfile,exist=fexist)
          if (.not. fexist) cycle peloop
 
-         call nclayer_check(nf90_open(obsfile, NF90_WRITE, iunit))
+         call nclayer_check(nf90_open(obsfile, NF90_NOWRITE, iunit))
          call nclayer_check(nf90_inq_dimid(iunit, "nobs", nobsid))
          call nclayer_check(nf90_inquire_dimension(iunit, nobsid, len = nobs))
          call nclayer_check(nf90_close(iunit))

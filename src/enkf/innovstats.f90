@@ -22,9 +22,9 @@ module innovstats
 !
 !$$$
 
-use enkf_obsmod, only:  oberrvar,ob,ensmean_ob,obtype,nobs_conv,nobs_oz,&
+use enkf_obsmod, only:  oberrvar,ob,ensmean_ob,nobs_conv,nobs_oz,&
                    nobs_sat,nobstot,obloclat,ensmean_obnobc,obpress,stattype,&
-                   oberrvar_orig,indxsat
+                   stattype,obtype,oberrvar_orig,indxsat
 use params, only : latbound
 use kinds, only: i_kind, r_kind,r_single
 use radinfo, only: jpch_rad,nusis,nuchan
@@ -34,9 +34,178 @@ implicit none
 
 private
 
-public :: print_innovstats
+public :: print_innovstats, print_dfs
 
 contains
+
+subroutine print_dfs(obsprd)
+real(r_single), intent(in) :: obsprd(nobstot)
+real(r_single) :: dfs, dfs_conv, dfs_sum
+character(len=20) ob_type
+integer nob,n,ob_id
+dfs = sum(obsprd/oberrvar_orig)/nobstot
+print *,'total_dfs = ',dfs
+dfs = sum(obsprd(1:nobs_conv)/oberrvar_orig(1:nobs_conv))/nobstot
+dfs_conv = dfs
+dfs_sum = 0
+print *,'dfs conventional = ',dfs
+dfs = sum(obsprd(nobs_conv+1:nobs_conv+nobs_oz)/oberrvar_orig(nobs_conv+1:nobs_conv+nobs_oz))/nobstot
+print *,'dfs ozone = ',dfs
+dfs = sum(obsprd(nobs_conv+nobs_oz+1:nobstot)/oberrvar_orig(nobs_conv+nobs_oz+1:nobstot))/nobstot
+print *,'dfs radiance = ',dfs
+dfs = 0.; n = 0
+! radiosondes, drops, pibals
+! https://www.emc.ncep.noaa.gov/mmb/data_processing/prepbufr.doc/table_19.htm
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if (ob_id == 120 .or. ob_id == 132 .or. ob_id == 182 .or. ob_id == 220 .or. ob_id == 232 .or. &
+       ob_id == 221 .or. ob_id == 222) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'sonde = ',n,dfs/nobstot
+dfs_sum = dfs
+dfs = 0.; n = 0
+! profilers and radars
+! https://www.emc.ncep.noaa.gov/mmb/data_processing/prepbufr.doc/table_19.htm
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if (ob_id == 223 .or. ob_id == 224 .or. (ob_id >= 227.and.ob_id <= 229) .or. &
+       ob_id == 126) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'prof = ',n,dfs/nobstot
+dfs_sum = dfs_sum + dfs
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if ((ob_id > 180 .and. ob_id < 200) .or. &
+       ob_id == 280 .or. ob_id == 281 .or. ob_id == 282 .or. ob_id == 284 .or. &
+       ob_id == 287 .or. ob_id == 288 .or. (ob_id >  291 .and. ob_id <= 299)) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'sfc = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if (ob_id == 285 .or. ob_id == 286 .or. ob_id == 289 .or. ob_id == 290 .or. &
+       ob_id == 291) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'scat = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if (ob_id == 130 .or. ob_id == 131 .or. ob_id == 230 .or. ob_id == 231 .or. &
+       (ob_id >= 133 .and. ob_id <= 135) .or. &
+       (ob_id >= 233 .and. ob_id <= 235)) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'aircraft = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   ob_id = stattype(nob)
+   if (ob_id >= 240 .and. ob_id <= 260) then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'amv = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:3) == 'tcp') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'tcp = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=1,nobs_conv
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:3) == 'gps') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+dfs_sum = dfs_sum + dfs
+print *,'gps = ',n,dfs/nobstot
+print *,'dfs_conv,dfs_sum = ',dfs_conv,dfs_sum/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:5) == 'amsua') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'amsua = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:4) == 'atms') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'atms = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:3) == 'mhs') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'mhs = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:4) == 'airs') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'airs = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:4) == 'iasi') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'iasi = ',n,dfs/nobstot
+dfs = 0.; n = 0
+do nob=nobs_conv+nobs_oz+1,nobstot
+   ob_type = trim(adjustl(obtype(nob)))
+   if (ob_type(1:4) == 'cris') then
+      n = n + 1
+      dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
+   endif
+enddo
+print *,'cris = ',n,dfs/nobstot
+end subroutine print_dfs
 
 subroutine print_innovstats(obfit,obsprd)
 real(r_single), intent(in) :: obfit(nobstot), obsprd(nobstot)

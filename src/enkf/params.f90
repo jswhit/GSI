@@ -180,6 +180,8 @@ integer(i_kind),public :: nvars = -1
 
 ! sort obs in LETKF in order of decreasing DFS
 logical,public :: dfs_sort = .false.
+! flag to print DFS stats and stop
+logical,public :: compute_dfs = .false.
 
 ! if true generate additional input files
 ! required for EFSO calculations
@@ -226,7 +228,7 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    lnsigcutoffsatnh,lnsigcutoffsattr,lnsigcutoffsatsh,&
                    lnsigcutoffpsnh,lnsigcutoffpstr,lnsigcutoffpssh,&
                    fgfileprefixes,fgsfcfileprefixes,anlfileprefixes, &
-                   incfileprefixes, &
+                   incfileprefixes, compute_dfs, &
                    statefileprefixes,statesfcfileprefixes, &
                    covl_minfact,covl_efold,lupd_obspace_serial,letkf_novlocal,&
                    analpertwtnh,analpertwtsh,analpertwttr,sprd_tol,&
@@ -635,7 +637,11 @@ do while (nhr_anal(nbackgrounds+1) > 0)
         fgfileprefixes(nbackgrounds+1)="firstguess."
       endif
      else  ! global
+      if (.not. compute_dfs) then
       fgfileprefixes(nbackgrounds+1)="sfg_"//datestring//"_fhr"//charfhr_anal(nbackgrounds+1)//"_"
+      else
+      fgfileprefixes(nbackgrounds+1)="sanl_"//datestring//"_fhr"//charfhr_anal(nbackgrounds+1)//"_"
+      endif
      endif
    endif
    if (trim(fgsfcfileprefixes(nbackgrounds+1)) .eq. "") then
@@ -657,7 +663,11 @@ do while (nhr_state(nstatefields+1) > 0)
         statefileprefixes(nstatefields+1)="firstguess."
       endif
      else  ! global
+      if (.not. compute_dfs) then
       statefileprefixes(nstatefields+1)="sfg_"//datestring//"_fhr"//charfhr_state(nstatefields+1)//"_"
+      else
+      statefileprefixes(nstatefields+1)="sanl_"//datestring//"_fhr"//charfhr_state(nstatefields+1)//"_"
+      endif
      endif
    endif
    if (trim(statesfcfileprefixes(nstatefields+1)) .eq. "") then

@@ -109,6 +109,7 @@ use params, only: &
       corrlengthtr, corrlengthsh, obtimelnh, obtimeltr, obtimelsh,&
       lnsigcutoffsatnh, lnsigcutoffsatsh, lnsigcutoffsattr,&
       varqc, huber, zhuberleft, zhuberright, modelspace_vloc, &
+      compute_dfs, letkf_flag, lupd_obspace_serial, &
       lnsigcutoffpsnh, lnsigcutoffpssh, lnsigcutoffpstr, neigv
 
 use state_vectors, only: init_anasv
@@ -279,56 +280,80 @@ subroutine write_obsstats()
 use readconvobs, only: write_convobs_data
 use readozobs,   only: write_ozobs_data
 use readsatobs,  only: write_satobs_data
-character(len=10) :: id,id2,gesid2
+character(len=12) :: id,id2,gesid2
 
-  id = 'ensmean'
-  id2 = 'enssprd'
+  ! id2 not used for netcdf output
+  if (compute_dfs) then
+     id = 'ensmean_dfs'
+     id2 = 'enssprd_dfs' 
+  else
+     id = 'ensmean'
+     id2 = 'enssprd'
+  endif
   if (nproc==0) then
     if (nobs_conv > 0) then
        print *, 'obsprd, conv: ', minval(obsprd_prior(1:nobs_conv)),    &
               maxval(obsprd_prior(1:nobs_conv))
-       gesid2 = 'ges'
+       if (compute_dfs) then
+          gesid2 = 'anl'
+       else
+          gesid2 = 'ges'
+       endif
        call write_convobs_data(datapath, datestring, nobs_conv, nobs_convdiag,  &
              obfit_prior(1:nobs_conv), obsprd_prior(1:nobs_conv),               &
              diagused(1:nobs_convdiag),                                         &
              id, id2, gesid2)
+       if (.not. letkf_flag .or. (letkf_flag .and. lupd_obspace_serial)) then
        gesid2 = 'anl'
        call write_convobs_data(datapath, datestring, nobs_conv, nobs_convdiag,  &
              obfit_post(1:nobs_conv), obsprd_post(1:nobs_conv),                 &
              diagused(1:nobs_convdiag),                                         &
              id, id2, gesid2)
+       endif
     end if
     if (nobs_oz > 0) then
        print *, 'obsprd, oz: ', minval(obsprd_prior(nobs_conv+1:nobs_conv+nobs_oz)), &
               maxval(obsprd_prior(nobs_conv+1:nobs_conv+nobs_oz))
-       gesid2 = 'ges'
+       if (compute_dfs) then
+          gesid2 = 'anl'
+       else
+          gesid2 = 'ges'
+       endif
        call write_ozobs_data(datapath, datestring, nobs_oz, nobs_ozdiag,  &
              obfit_prior(nobs_conv+1:nobs_conv+nobs_oz),                  &
              obsprd_prior(nobs_conv+1:nobs_conv+nobs_oz),                 &
              diagused(nobs_convdiag+1:nobs_convdiag+nobs_ozdiag),         &
              id, id2, gesid2)
+       if (.not. letkf_flag .or. (letkf_flag .and. lupd_obspace_serial)) then
        gesid2 = 'anl'
        call write_ozobs_data(datapath, datestring, nobs_oz, nobs_ozdiag,  &
              obfit_post(nobs_conv+1:nobs_conv+nobs_oz),                   &
              obsprd_post(nobs_conv+1:nobs_conv+nobs_oz),                  &
              diagused(nobs_convdiag+1:nobs_convdiag+nobs_ozdiag),         &
              id, id2, gesid2)
+       endif
     end if
     if (nobs_sat > 0) then
        print *, 'obsprd, sat: ', minval(obsprd_prior(nobs_conv+nobs_oz+1:nobstot)), &
               maxval(obsprd_prior(nobs_conv+nobs_oz+1:nobstot))
-       gesid2 = 'ges'
+       if (compute_dfs) then
+          gesid2 = 'anl'
+       else
+          gesid2 = 'ges'
+       endif
        call write_satobs_data(datapath, datestring, nobs_sat, nobs_satdiag, &
              obfit_prior(nobs_conv+nobs_oz+1:nobstot),                      &
              obsprd_prior(nobs_conv+nobs_oz+1:nobstot),                     & 
              diagused(nobs_convdiag+nobs_ozdiag+1:nobstotdiag),             &
              id, id2, gesid2)
+       if (.not. letkf_flag .or. (letkf_flag .and. lupd_obspace_serial)) then
        gesid2 = 'anl'
        call write_satobs_data(datapath, datestring, nobs_sat, nobs_satdiag, &
              obfit_post(nobs_conv+nobs_oz+1:nobstot),                       &
              obsprd_post(nobs_conv+nobs_oz+1:nobstot),                      &
              diagused(nobs_convdiag+nobs_ozdiag+1:nobstotdiag),             &
              id, id2, gesid2)
+       endif
     end if
   endif
 
@@ -348,6 +373,7 @@ failm=1.e30_r_single
 !==> pre-process obs, obs metadata.
 do nob=1,nobstot
   if (nob > nobs_conv+nobs_oz) oberrvar(nob) = saterrfact*oberrvar(nob)
+  if (compute_dfs .and. nob > nobs_conv+nobs_oz) oberrvar_orig(nob) = saterrfact*oberrvar_orig(nob)
   ! empirical adjustment of obs errors for Huber norm from ECMWF RD tech memo
   if (varqc) oberrvar(nob) = oberrvar(nob)*(min(one,0.5_r_single+0.125_r_single*(zhuberleft+zhuberright)))**2
 

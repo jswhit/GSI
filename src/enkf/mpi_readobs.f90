@@ -33,7 +33,7 @@ module mpi_readobs
 !$$$
   
 use kinds, only: r_double,i_kind,r_kind,r_single,num_bytes_for_r_single
-use params, only: ntasks_io, nanals_per_iotask, nanal1, nanal2
+use params, only: ntasks_io, nanals_per_iotask, nanal1, nanal2, compute_dfs
 use radinfo, only: npred
 use readconvobs
 use readsatobs
@@ -62,7 +62,7 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
                       shm_win, shm_win2, indxsat, nanals, neigv)
     character*500, intent(in) :: obspath
     character*10, intent(in) :: datestring
-    character(len=10) :: id,id2
+    character(len=12) :: id,id2
     real(r_single), allocatable, dimension(:)   :: ensmean_ob,ob,oberr,oblon,oblat
     real(r_single), allocatable, dimension(:)   :: obpress,obtime,oberrorig,ensmean_obbc,sprd_ob
     integer(i_kind), allocatable, dimension(:)  :: obcode,indxsat
@@ -87,7 +87,11 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
     iozproc=max(0,min(1,numproc-1))
     isatproc=max(0,min(2,numproc-2))
 ! get total number of conventional and sat obs for ensmean.
-    id = 'ensmean'
+    if (compute_dfs) then
+       id = 'ensmean_dfs'
+    else
+       id = 'ensmean'
+    endif
     if(nproc == 0)call get_num_convobs(obspath,datestring,nobs_conv,nobs_convdiag,id)
     if(nproc == iozproc)call get_num_ozobs(obspath,datestring,nobs_oz,nobs_ozdiag,id)
     if(nproc == isatproc)call get_num_satobs(obspath,datestring,nobs_sat,nobs_satdiag,id)
@@ -167,7 +171,11 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
     nmem = 0
     do nanal=nens1,nens2 ! loop over ens members on this task
     nmem = nmem + 1 ! nmem only used if lobsdiag_forenkf=T
-    id = 'ensmean'
+    if (compute_dfs) then
+       id = 'ensmean_dfs'
+    else
+       id = 'ensmean'
+    endif
     id2 = id
     mem_ob=0
     if (neigv > 0) mem_ob_modens=0
