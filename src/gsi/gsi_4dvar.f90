@@ -76,6 +76,7 @@ module gsi_4dvar
 !   l4densvar         - Logical flag for 4d-ensemble-var option
 !   lhourly_da        - Logical flag for hourly DA wind overlapping windows
 !   liau              - Logical flag for hourly DA with IAU
+!   lfg_only          - Logical flag for hourly DA with IAU - use f02 or f01 
 !   ens_nhr           - Time between time levels for ensemble (currently same as nhr_obsbins)
 !   ens_fhrlevs       - Forecast length for each time level for ensemble perturbations
 !                       this variable defines the assumed filenames for ensemble
@@ -116,7 +117,7 @@ module gsi_4dvar
   public :: min_offset,iadateend,ibdate,iedate,lanczosave,lbfgsmin
   public :: ladtest,ladtest_obs,lgrtest,lcongrad,nhr_obsbin,nhr_subwin,nwrvecs
   public :: jsiga,ltcost,iorthomax,liauon,lnested_loops
-  public :: l4densvar,lhourly_da,liau,ens_nhr,ens_fhrlevs,ens_nstarthr,ibin_anl
+  public :: l4densvar,lhourly_da,liau,lfg_only,ens_nhr,ens_fhrlevs,ens_nstarthr,ibin_anl
   public :: lwrite4danl,thin4d,nhr_anal
   public :: mPEs_observer
   public :: tau_fcst
@@ -140,6 +141,7 @@ module gsi_4dvar
   logical         :: l4densvar
   logical         :: lhourly_da
   logical         :: liau
+  logical         :: lfg_only
   logical         :: lnested_loops
   logical         :: lwrite4danl
   logical         :: thin4d
@@ -206,6 +208,7 @@ liauon = .false.
 l4densvar = .false.
 lhourly_da= .false.
 liau      = .false.
+lfg_only  = .true.
 lnested_loops=.false.
 
 nhr_assimilation=6
@@ -404,6 +407,7 @@ if (mype==0) then
    write(6,*)'SETUP_4DVAR: l4densvar=',l4densvar
    write(6,*)'SETUP_4DVAR: lhourly_da=',lhourly_da
    write(6,*)'SETUP_4DVAR: liau      =',liau
+   write(6,*)'SETUP_4DVAR: lfg_only  =',lfg_only
    write(6,*)'SETUP_4DVAR: winlen=',winlen
    write(6,*)'SETUP_4DVAR: winoff=',winoff
    write(6,*)'SETUP_4DVAR: hr_obsbin=',hr_obsbin

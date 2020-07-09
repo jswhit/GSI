@@ -1644,7 +1644,7 @@ contains
     use mpimod, only: mype
     use kinds, only: r_kind,i_kind,r_single
     use gridmod, only: nlat,nlon
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
     use constants, only: zero
     use nemsio_module, only:  nemsio_init,nemsio_open,nemsio_close
     use nemsio_module, only:  nemsio_gfile,nemsio_getfilehead,nemsio_readrecv
@@ -1683,7 +1683,8 @@ contains
 
     if (lhourly_da) then
        if(      liau) filename='sfcf04_anlgrid'
-       if(.not. liau) filename='sfcf02_anlgrid'
+       if(.not. liau .and.      lfg_only) filename='sfcf02_anlgrid'
+       if(.not. liau .and..not. lfg_only) filename='sfcf01_anlgrid'
     else
        filename='sfcf06_anlgrid'
     end if
@@ -4325,7 +4326,7 @@ contains
 
     use general_commvars_mod, only: ltosi,ltosj
 
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
 
     use obsmod, only: iadate
 
@@ -4376,7 +4377,8 @@ contains
 !   Determine fname_ges
     if (lhourly_da) then
        if(      liau) fname_ges='sfcf04'
-       if(.not. liau) fname_ges='sfcf02'
+       if(.not. liau .and.      lfg_only) fname_ges='sfcf02'
+       if(.not. liau .and..not. lfg_only) fname_ges='sfcf01'
     else
        fname_ges='sfcf06'
     end if
@@ -4577,7 +4579,7 @@ contains
 
     use guess_grids, only: isli2
     use gsi_nstcouplermod, only: nst_gsi,zsea1,zsea2
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use nemsio_module, only:  nemsio_init,nemsio_open,nemsio_close,nemsio_readrecv
@@ -4651,8 +4653,10 @@ contains
     if (lhourly_da) then
        if(      liau) fname_sfcges = 'sfcf04'
        if(      liau) fname_nstges = 'nstf04'
-       if(.not. liau) fname_sfcges = 'sfcf02'
-       if(.not. liau) fname_nstges = 'nstf02'
+       if(.not. liau .and.      lfg_only) fname_sfcges = 'sfcf02'
+       if(.not. liau .and.      lfg_only) fname_nstges = 'nstf02'
+       if(.not. liau .and..not. lfg_only) fname_sfcges = 'sfcf01'
+       if(.not. liau .and..not. lfg_only) fname_nstges = 'nstf01'
     else
        fname_sfcges = 'sfcf06'
        fname_nstges = 'nstf06'

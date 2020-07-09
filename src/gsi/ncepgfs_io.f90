@@ -816,7 +816,7 @@ end subroutine write_ghg_grid
     use sfcio_module, only: sfcio_axdata,sfcio_sclose
     use kinds, only: i_kind,r_single,r_kind
     use gridmod, only: nlat,nlon
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
 
     integer(i_kind), dimension(nlat,nlon), intent(  out) :: isli_anl
     integer(i_kind) :: latb,lonb
@@ -831,7 +831,8 @@ end subroutine write_ghg_grid
 ! read a surface file with analysis resolution on the task : isli only currently
     if(lhourly_da) then !nominal analysis is fh04/02 for hourly DA with overlapping windows and IAU/noIAU
        if(      liau) filename='sfcf04_anlgrid'
-       if(.not. liau) filename='sfcf02_anlgrid'
+       if(.not. liau .and.      lfg_only) filename='sfcf02_anlgrid'
+       if(.not. liau .and..not. lfg_only) filename='sfcf01_anlgrid'
     else
        filename='sfcf06_anlgrid'
     end if
@@ -1626,7 +1627,7 @@ end subroutine write_ghg_grid
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
     
     use general_commvars_mod, only: ltosi,ltosj
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
 
     use obsmod, only: iadate
     use ncepnems_io, only: intrp22
@@ -1677,7 +1678,8 @@ end subroutine write_ghg_grid
 !   Determine fname_ges
     if (lhourly_da) then
        if(      liau) fname_ges='sfcf04'
-       if(.not. liau) fname_ges='sfcf02'
+       if(.not. liau .and.      lfg_only) fname_ges='sfcf02'
+       if(.not. liau .and..not. lfg_only) fname_ges='sfcf01'
     else
        fname_ges='sfcf06'
     end if
@@ -1861,7 +1863,7 @@ end subroutine write_ghg_grid
     use obsmod,  only: iadate,ianldate
     use constants, only: zero,zero_single,two,tfrozen,z_w_max
     use guess_grids, only: isli2
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
     use gsi_nstcouplermod, only: nst_gsi,zsea1,zsea2
     use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
          sfcio_srohdc,sfcio_swohdc,sfcio_axdata
@@ -1935,8 +1937,10 @@ end subroutine write_ghg_grid
     if(lhourly_da) then
        if(      liau) fname_sfcges = 'sfcf04'
        if(      liau) fname_nstges = 'nstf04'
-       if(.not. liau) fname_sfcges = 'sfcf02'
-       if(.not. liau) fname_nstges = 'nstf02'
+       if(.not. liau .and.      lfg_only) fname_sfcges = 'sfcf02'
+       if(.not. liau .and.      lfg_only) fname_nstges = 'nstf02'
+       if(.not. liau .and..not. lfg_only) fname_sfcges = 'sfcf01'
+       if(.not. liau .and..not. lfg_only) fname_nstges = 'nstf01'
     else
        fname_sfcges = 'sfcf06'
        fname_nstges = 'nstf06'
@@ -2482,7 +2486,7 @@ end subroutine write_ghg_grid
     use constants, only: zero_single,zero,half,two,pi,tfrozen,z_w_max
     use guess_grids, only: isli2
     use gsi_nstcouplermod, only: nst_gsi
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
     use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
          sfcio_srohdc,sfcio_swohdc,sfcio_axdata
 
@@ -2599,8 +2603,10 @@ end subroutine write_ghg_grid
           if (lhourly_da) then
              if(      liau) fname_nstges = 'nstf04_mem'//cmember
              if(      liau) fname_sfcges = 'sfcf04_mem'//cmember
-             if(.not. liau) fname_nstges = 'nstf02_mem'//cmember
-             if(.not. liau) fname_sfcges = 'sfcf02_mem'//cmember
+             if(.not. liau .and.      lfg_only) fname_nstges = 'nstf02_mem'//cmember
+             if(.not. liau .and.      lfg_only) fname_sfcges = 'sfcf02_mem'//cmember
+             if(.not. liau .and..not. lfg_only) fname_nstges = 'nstf01_mem'//cmember
+             if(.not. liau .and..not. lfg_only) fname_sfcges = 'sfcf01_mem'//cmember
           else
              fname_nstges = 'nstf06_mem'//cmember
              fname_sfcges = 'sfcf06_mem'//cmember
@@ -2941,7 +2947,7 @@ end subroutine write_ghg_grid
     use obsmod,  only: ianldate
     use constants, only: zero_single,zero,half,two,pi,tfrozen
     use guess_grids, only: isli2
-    use gsi_4dvar, only: lhourly_da,liau
+    use gsi_4dvar, only: lhourly_da,liau,lfg_only
     use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
          sfcio_srohdc,sfcio_swohdc,sfcio_axdata
 
@@ -3052,8 +3058,10 @@ end subroutine write_ghg_grid
        if (lhourly_da) then
           if(      liau) fname_nstges = 'nstf04_ensmean'
           if(      liau) fname_sfcges = 'sfcf04_ensmean'
-          if(.not. liau) fname_nstges = 'nstf02_ensmean'
-          if(.not. liau) fname_sfcges = 'sfcf02_ensmean'
+          if(.not. liau .and.      lfg_only) fname_nstges = 'nstf02_ensmean'
+          if(.not. liau .and.      lfg_only) fname_sfcges = 'sfcf02_ensmean'
+          if(.not. liau .and..not. lfg_only) fname_nstges = 'nstf01_ensmean'
+          if(.not. liau .and..not. lfg_only) fname_sfcges = 'sfcf01_ensmean'
        else
           fname_nstges = 'nstf06_ensmean'
           fname_sfcges = 'sfcf06_ensmean'
