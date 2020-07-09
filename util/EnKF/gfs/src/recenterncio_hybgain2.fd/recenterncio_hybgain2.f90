@@ -32,19 +32,18 @@ program recenterncio_hybgain2
   include "mpif.h"
 
   character*500 filename_fg,filename_varanal,filename_enkfanal,filenamein,&
-                filenameout,filename_anal,filename_varfg,filename
+                filenameout,filename_anal,filename
   character*3 charnanal
   character(len=4) charnin
   integer mype,mype1,npe,nanals,iret,ialpha,ibeta
   integer:: nlats,nlons,nlevs,nvar,ndims,nbits
   real alpha,beta
   real(4),allocatable,dimension(:,:) :: values_2d_varanal,values_2d_enkfanal,values_2d_fg,values_2d_anal,&
-                                        values_2d_tmp, values_2d,values_2d_varfg
+                                        values_2d_tmp, values_2d
   real(4),allocatable,dimension(:,:,:) :: values_3d_varanal,values_3d_enkfanal,values_3d_fg,values_3d_anal,&
-                            values_3d_tmp, values_3d, values_3d_varfg
+                            values_3d_tmp, values_3d
   real(4) compress_err
-  type(Dataset) :: dseti,dseto,dset_anal,dset_fg,dset_varanal,dset_enkfanal,&
-                   dset_varfg
+  type(Dataset) :: dseti,dseto,dset_anal,dset_fg,dset_varanal,dset_enkfanal
   type(Dimension) :: londim,latdim,levdim
 
 ! Initialize mpi
@@ -57,28 +56,26 @@ program recenterncio_hybgain2
   if (mype==0) call w3tagb('RECENTERNCIO_HYBGAIN',2011,0319,0055,'NP25')
 
   call getarg(1,filename_fg)    ! first guess ensmean background netcdf file
-  call getarg(2,filename_varfg) ! first guess ensmean background file for 3dvar
-  call getarg(3,filename_varanal) ! 3dvar analysis
-  call getarg(4,filename_enkfanal) ! enkf mean analysis
-  call getarg(5,filename_anal)  ! blended analysis (to recenter ensemble around)
-  call getarg(6,filenamein) ! prefix for input ens member files (append _mem###)
-  call getarg(7,filenameout) ! prefix for output ens member files (append _mem###)
+  call getarg(2,filename_varanal) ! 3dvar analysis
+  call getarg(3,filename_enkfanal) ! enkf mean analysis
+  call getarg(4,filename_anal)  ! blended analysis (to recenter ensemble around)
+  call getarg(5,filenamein) ! prefix for input ens member files (append _mem###)
+  call getarg(6,filenameout) ! prefix for output ens member files (append _mem###)
 ! blending coefficients
-  call getarg(8,charnin)
+  call getarg(7,charnin)
   read(charnin,'(i4)') ialpha ! wt for varanal (3dvar)
   alpha = ialpha/1000.
-  call getarg(9,charnin)
+  call getarg(8,charnin)
   read(charnin,'(i4)') ibeta ! wt for enkfanal (enkf)
   beta = ibeta/1000.
-! new_anal = alpha*(varanal-varfg) + beta*(enkfanal-enkffg)
+! new_anal = fg + alpha*(varanal-fg) + beta*(enkfanal-fg)
 ! how many ensemble members to process
-  call getarg(10,charnin)
+  call getarg(9,charnin)
   read(charnin,'(i4)') nanals
 
   if (mype==0) then
      write(6,*)'RECENTERNCIO_HYBGAIN:  PROCESS ',nanals,' ENSEMBLE MEMBERS'
      write(6,*)'ens mean background in ',trim(filename_fg)
-     write(6,*)'background for 3dvar in ',trim(filename_varfg)
      write(6,*)'3dvar analysis in ',trim(filename_varanal)
      write(6,*)'EnKF mean analysis in ',trim(filename_enkfanal)
      write(6,*)'Blended mean analysis to be written to ',trim(filename_anal)
@@ -102,13 +99,6 @@ program recenterncio_hybgain2
         stop
      endif
 
-     ! read in 3dvar background
-     dset_varfg = open_dataset(filename_varfg,errcode=iret)
-     if (iret /= 0) then
-       print *,'error opening ',trim(filename_varfg)
-       call MPI_Abort(MPI_COMM_WORLD,98,iret)
-       stop
-     endif
      ! read in 3dvar, enkf analyses, plus ens mean background, blend
      dset_varanal = open_dataset(filename_varanal,errcode=iret)
      if (iret /= 0) then
@@ -154,13 +144,12 @@ program recenterncio_hybgain2
             if (ndims == 3 .and. trim(dset_fg%variables(nvar)%name) /= 'hgtsfc') then
                ! pressfc
                call read_vardata(dset_fg,trim(dset_fg%variables(nvar)%name),values_2d_fg)
-               call read_vardata(dset_varfg,trim(dset_varfg%variables(nvar)%name),values_2d_varfg)
                call read_vardata(dset_varanal,trim(dset_fg%variables(nvar)%name),values_2d_varanal)
                call read_vardata(dset_enkfanal,trim(dset_fg%variables(nvar)%name),values_2d_enkfanal)
                call read_vardata(dseti,trim(dset_fg%variables(nvar)%name),values_2d)
                ! blended analysis
                values_2d_anal = values_2d_fg + beta*(values_2d_enkfanal-values_2d_fg) + &
-                                alpha*(values_2d_varanal-values_2d_varfg) 
+                                alpha*(values_2d_varanal-values_2d_fg) 
                ! recentered ensemble member
                values_2d = values_2d - values_2d_enkfanal + values_2d_anal
                if (has_attr(dset_fg, 'nbits', trim(dset_fg%variables(nvar)%name))) then
@@ -187,14 +176,15 @@ program recenterncio_hybgain2
                call write_vardata(dseto,trim(dset_fg%variables(nvar)%name),values_2d)
             else if (ndims == 4) then
                call read_vardata(dset_fg,trim(dset_fg%variables(nvar)%name),values_3d_fg)
-               call read_vardata(dset_varfg,trim(dset_varfg%variables(nvar)%name),values_3d_varfg)
                call read_vardata(dset_varanal,trim(dset_fg%variables(nvar)%name),values_3d_varanal)
                call read_vardata(dset_enkfanal,trim(dset_fg%variables(nvar)%name),values_3d_enkfanal)
                call read_vardata(dseti,trim(dset_fg%variables(nvar)%name),values_3d)
                ! blended analysis
                values_3d_anal = values_3d_fg + beta*(values_3d_enkfanal-values_3d_fg) +  &
-                                alpha*(values_3d_varanal - values_3d_varfg) 
+                                alpha*(values_3d_varanal - values_3d_fg) 
                ! recentered ensemble member
+               ! RTPS inflation here?
+               !values_3d = inf*(values_3d - values_3d_enkfanal) + values_3d_anal
                values_3d = values_3d - values_3d_enkfanal + values_3d_anal
                if (has_attr(dset_fg, 'nbits', trim(dset_fg%variables(nvar)%name))) then
                    call read_attribute(dset_fg, 'nbits', nbits, &
@@ -228,7 +218,6 @@ program recenterncio_hybgain2
      call close_dataset(dseto)
      call close_dataset(dset_fg)
      call close_dataset(dset_varanal)
-     call close_dataset(dset_varfg)
      call close_dataset(dset_enkfanal)
      write(6,*)'task mype=',mype,' process ',trim(filenameout)//"_mem"//charnanal,' iret=',iret
 
