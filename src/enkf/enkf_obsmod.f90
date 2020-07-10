@@ -365,6 +365,7 @@ subroutine screenobs()
 ! that fail background check.  For screened obs oberrvar is set to 1.e31_r_single
 !use radbias, only: apply_biascorr
 real(r_single) fail,failm
+character(len=20) ob_type
 integer nn,nob
 fail=1.e31_r_single
 failm=1.e30_r_single
@@ -372,8 +373,22 @@ failm=1.e30_r_single
 !call apply_biascorr()
 !==> pre-process obs, obs metadata.
 do nob=1,nobstot
-  if (nob > nobs_conv+nobs_oz) oberrvar(nob) = saterrfact*oberrvar(nob)
-  if (compute_dfs .and. nob > nobs_conv+nobs_oz) oberrvar_orig(nob) = saterrfact*oberrvar_orig(nob)
+  ! radiances
+  if (nob > nobs_conv+nobs_oz) then
+       oberrvar(nob) = saterrfact*oberrvar(nob)
+       oberrvar_orig(nob)= saterrfact*oberrvar_orig(nob)
+  endif
+  ! sat winds
+  if (stattype(nob) >= 240 .and. stattype(nob) <= 260) then
+       oberrvar(nob) = saterrfact*oberrvar(nob)
+       oberrvar_orig(nob)= saterrfact*oberrvar_orig(nob)
+  endif
+  ! gps
+  ob_type = trim(adjustl(obtype(nob)))
+  if (ob_type(1:3) == 'gps') then
+       oberrvar(nob) = saterrfact*oberrvar(nob)
+       oberrvar_orig(nob)= saterrfact*oberrvar_orig(nob)
+  endif
   ! empirical adjustment of obs errors for Huber norm from ECMWF RD tech memo
   if (varqc) oberrvar(nob) = oberrvar(nob)*(min(one,0.5_r_single+0.125_r_single*(zhuberleft+zhuberright)))**2
 
