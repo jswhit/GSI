@@ -107,7 +107,7 @@ use enkf_obsmod, only: oberrvar, ob, ensmean_ob, obloc, oblnp, &
                   numobspersat, biaspreds, corrlengthsq,&
                   probgrosserr, prpgerr, obtype, obpress,&
                   lnsigl, anal_ob, anal_ob_modens, obloclat, obloclon, stattype
-use constants, only: pi, one, zero, rad2deg, deg2rad
+use constants, only: pi, one, zero, rad2deg, deg2rad, rearth
 use params, only: sprd_tol, datapath, nanals, iseed_perturbed_obs,&
                   iassim_order,sortinc,deterministic,nlevs,&
                   zhuberleft,zhuberright,varqc,lupd_satbiasc,huber,letkf_novlocal,&
@@ -135,8 +135,11 @@ implicit none
 integer(i_kind) nob,nf,nanal,nens,&
                 i,nlev,nrej,npt,nn,nnmax,ierr
 integer(i_kind) nobsl, ngrd1, nobsl2, nthreads, nb, &
-                nobslocal_min,nobslocal_max, &
-                nobslocal_minall,nobslocal_maxall
+                nobslocal_mean,nobslocal_min,nobslocal_max, &
+                nobslocal_meanall,nobslocal_minall,nobslocal_maxall
+real(r_single)  robslocal_mean,robslocal_min,robslocal_max,re, &
+                robslocal_meanall,robslocal_minall,robslocal_maxall,&
+                coslatslocal_meanall, coslatslocal_mean, coslat
 integer(i_kind),allocatable,dimension(:) :: oindex
 real(r_single) :: deglat, dist, corrsq, trpa, trpa_raw, maxdfs
 real(r_double) :: t1,t2,t3,t4,t5,tbegin,tend,tmin,tmax,tmean
@@ -152,7 +155,7 @@ real(r_single),allocatable,dimension(:,:) :: obens
 real(r_single),allocatable,dimension(:,:,:) :: ens_tmp
 real(r_single),allocatable,dimension(:,:) :: wts_ensperts,pa
 real(r_single),allocatable,dimension(:) :: dfs,wts_ensmean
-real(r_kind),allocatable,dimension(:) :: rdiag,rloc
+real(r_kind),allocatable,dimension(:) :: rdiag,rloc,robs_local,coslats_local
 real(r_single),allocatable,dimension(:) :: dep
 ! kdtree stuff
 type(kdtree2_result),dimension(:),allocatable :: sresults
@@ -160,6 +163,7 @@ integer(i_kind), dimension(:), allocatable :: indxassim, indxob
 real(r_kind) eps
 
 eps = epsilon(0.0_r_single) ! real(4) machine precision
+re = rearth/1.e3_r_single
 
 !$omp parallel
 nthreads = omp_get_num_threads()
@@ -258,13 +262,21 @@ t3 = zero
 t4 = zero
 t5 = zero
 tbegin = mpi_wtime()
+
 nobslocal_max = -999
 nobslocal_min = nobstot
+nobslocal_mean = 0
+allocate(robs_local(npts_max))
+robs_local = 0
+if (nobsl_max > 0) then
+  allocate(coslats_local(npts_max))
+  coslats_local = 0
+endif
 
 ! Update ensemble on model grid.
 ! Loop for each horizontal grid points on this task.
 !$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
-!$omp                  nobsl2,ngrd1,corrlength,ens_tmp, &
+!$omp                  nobsl2,ngrd1,corrlength,ens_tmp,coslat, &
 !$omp                  nf,vdist,obens,indxassim,indxob,maxdfs, &
 !$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
 !$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
@@ -275,6 +287,7 @@ nobslocal_min = nobstot
 !$omp                  vlocal_evecs,vlocal,oblnp,lnp_chunk,lnsigl,corrlengthsq,&
 !$omp                  getkf,denkf,getkf_inflation,ensmean_chunk,ob,ensmean_ob, &
 !$omp                  nproc,numptsperproc,nnmax,r_nanalsm1,kdtree_obs2,kdobs, &
+!$omp                  robs_local,coslats_local, &
 !$omp                  lupd_obspace_serial,eps,dfs_sort,nanals,index_pres,&
 !$omp  neigv,nlevs,lonsgrd,latsgrd,nobstot,nens,ncdim,nbackgrounds,indxproc,rad2deg) &
 !$omp  reduction(+:t1,t2,t3,t4,t5) &
@@ -287,6 +300,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
    ! find obs close to this grid point (using kdtree)
    ngrd1=indxproc(nproc+1,npt)
    deglat = latsgrd(ngrd1)*rad2deg
+   coslat = cos(latsgrd(ngrd1))
    corrlength=latval(deglat,corrlengthnh,corrlengthtr,corrlengthsh)
    corrsq = corrlength**2
    allocate(sresults(nobstot))
@@ -375,6 +389,12 @@ grdloop: do npt=1,numptsperproc(nproc+1)
       if (allocated(sresults)) deallocate(sresults)
       if (allocated(ens_tmp)) deallocate(ens_tmp)
       cycle grdloop
+   endif
+   if (nobsl_max > 0) then
+      robs_local(npt) = sqrt(sresults(nobsl)%dis)
+      coslats_local(npt) = coslat
+   else
+      robs_local(npt) = nobsl
    endif
 
    ! Loop through vertical levels (nnmax=1 if no vertical localization)
@@ -535,10 +555,35 @@ tmean = tmean/numproc
 call mpi_reduce(t5,tmin,1,mpi_real8,mpi_min,0,mpi_comm_world,ierr)
 call mpi_reduce(t5,tmax,1,mpi_real8,mpi_max,0,mpi_comm_world,ierr)
 if (nproc .eq. 0) print *,',min/max/mean t5 = ',tmin,tmax,tmean
-call mpi_reduce(nobslocal_max,nobslocal_maxall,1,mpi_integer,mpi_max,0,mpi_comm_world,ierr)
-call mpi_reduce(nobslocal_min,nobslocal_minall,1,mpi_integer,mpi_max,0,mpi_comm_world,ierr)
-if (nproc == 0) print *,'min/max number of obs in local volume',nobslocal_minall,nobslocal_maxall
+
+if (nobsl_max > 0) then
+   ! compute and print min/max/mean search radius to find nobsl_max
+   robslocal_mean = sum(robs_local*coslats_local)/numptsperproc(nproc+1)
+   coslatslocal_mean = sum(coslats_local)/numptsperproc(nproc+1)
+   robslocal_min = minval(robs_local(1:numptsperproc(nproc+1)))
+   robslocal_max = maxval(robs_local(1:numptsperproc(nproc+1)))
+   call mpi_reduce(robslocal_max,robslocal_maxall,1,mpi_real4,mpi_max,0,mpi_comm_world,ierr)
+   call mpi_reduce(robslocal_min,robslocal_minall,1,mpi_real4,mpi_min,0,mpi_comm_world,ierr)
+   call mpi_reduce(robslocal_mean,robslocal_meanall,1,mpi_real4,mpi_sum,0,mpi_comm_world,ierr)
+   call mpi_reduce(coslatslocal_mean,coslatslocal_meanall,1,mpi_real4,mpi_sum,0,mpi_comm_world,ierr)
+   if (nproc == 0) print *,'min/max/mean distance searched for local obs',re*robslocal_minall,re*robslocal_maxall,re*robslocal_meanall/coslatslocal_meanall
+   deallocate(coslats_local)
+else
+   ! compute and print min/max/mean number of obs found within search radius
+   nobslocal_mean = nint(sum(robs_local)/numptsperproc(nproc+1))
+   nobslocal_min = minval(robs_local(1:numptsperproc(nproc+1)))
+   nobslocal_max = maxval(robs_local(1:numptsperproc(nproc+1)))
+   call mpi_reduce(nobslocal_max,nobslocal_maxall,1,mpi_integer,mpi_max,0,mpi_comm_world,ierr)
+   call mpi_reduce(nobslocal_min,nobslocal_minall,1,mpi_integer,mpi_min,0,mpi_comm_world,ierr)
+   call mpi_reduce(nobslocal_mean,nobslocal_meanall,1,mpi_integer,mpi_sum,0,mpi_comm_world,ierr)
+   if (nproc == 0) print *,'min/max/mean number of obs in local volume',nobslocal_minall,nobslocal_maxall,nint(nobslocal_meanall/float(numproc))
+endif
+!call mpi_reduce(nobslocal_max,nobslocal_maxall,1,mpi_integer,mpi_max,0,mpi_comm_world,ierr)
+!call mpi_reduce(nobslocal_min,nobslocal_minall,1,mpi_integer,mpi_max,0,mpi_comm_world,ierr)
+!if (nproc == 0) print *,'min/max number of obs in local volume',nobslocal_minall,nobslocal_maxall
+
 if (nrej > 0 .and. nproc == 0) print *, nrej,' obs rejected by varqc'
+deallocate(robs_local)
   
 if (allocated(ens_tmp)) deallocate(ens_tmp)
 
