@@ -326,7 +326,7 @@ if (nproc <= ntasks_io-1) then
                 minval(grdin_mean(:,clevels(nc3d) + nvar)),                &
                 maxval(grdin_mean(:,clevels(nc3d) + nvar))
          enddo
-         if (maxval(abs(grdin_mean)) > 100) then
+         if (maxval(abs(grdin_mean)) > 150) then
              print *,'crazy increment, aborting...'
              call stop2(503)
          endif

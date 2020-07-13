@@ -40,19 +40,20 @@ contains
 
 subroutine print_dfs(obsprd)
 real(r_single), intent(in) :: obsprd(nobstot)
-real(r_single) :: dfs, dfs_conv, dfs_sum
+real(r_single) :: dfs, dfs_conv, dfs_sum, dfs_tot
 character(len=20) ob_type
 integer nob,n,ob_id
 dfs = sum(obsprd/oberrvar_orig)/nobstot
+dfs_tot = dfs
 print *,'total_dfs = ',dfs
 dfs = sum(obsprd(1:nobs_conv)/oberrvar_orig(1:nobs_conv))/nobstot
 dfs_conv = dfs
 dfs_sum = 0
-print *,'dfs conventional = ',dfs
+print *,'dfs diag_conv = ',dfs/dfs_tot
 dfs = sum(obsprd(nobs_conv+1:nobs_conv+nobs_oz)/oberrvar_orig(nobs_conv+1:nobs_conv+nobs_oz))/nobstot
-print *,'dfs ozone = ',dfs
+print *,'dfs diag_oz = ',dfs/dfs_tot
 dfs = sum(obsprd(nobs_conv+nobs_oz+1:nobstot)/oberrvar_orig(nobs_conv+nobs_oz+1:nobstot))/nobstot
-print *,'dfs radiance = ',dfs
+print *,'dfs diag_rad = ',dfs/dfs_tot
 dfs = 0.; n = 0
 ! radiosondes, drops, pibals
 ! https://www.emc.ncep.noaa.gov/mmb/data_processing/prepbufr.doc/table_19.htm
@@ -65,7 +66,7 @@ do nob=1,nobs_conv
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'sonde = ',n,dfs/nobstot
+print *,'sonde = ',n,(dfs/nobstot)/dfs_tot
 dfs_sum = dfs
 dfs = 0.; n = 0
 ! profilers and radars
@@ -79,7 +80,7 @@ do nob=1,nobs_conv
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'prof = ',n,dfs/nobstot
+print *,'prof = ',n,(dfs/nobstot)/dfs_tot
 dfs_sum = dfs_sum + dfs
 dfs = 0.; n = 0
 do nob=1,nobs_conv
@@ -93,7 +94,7 @@ do nob=1,nobs_conv
    endif
 enddo
 dfs_sum = dfs_sum + dfs
-print *,'sfc = ',n,dfs/nobstot
+print *,'sfc = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=1,nobs_conv
    ob_type = trim(adjustl(obtype(nob)))
@@ -104,7 +105,7 @@ do nob=1,nobs_conv
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-dfs_sum = dfs_sum + dfs
+dfs_sum = dfs_sum + (dfs/nobstot)/dfs_tot
 print *,'scat = ',n,dfs/nobstot
 dfs = 0.; n = 0
 do nob=1,nobs_conv
@@ -118,7 +119,7 @@ do nob=1,nobs_conv
    endif
 enddo
 dfs_sum = dfs_sum + dfs
-print *,'aircraft = ',n,dfs/nobstot
+print *,'aircraft = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=1,nobs_conv
    ob_type = trim(adjustl(obtype(nob)))
@@ -129,7 +130,7 @@ do nob=1,nobs_conv
    endif
 enddo
 dfs_sum = dfs_sum + dfs
-print *,'amv = ',n,dfs/nobstot
+print *,'amv = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=1,nobs_conv
    ob_type = trim(adjustl(obtype(nob)))
@@ -139,7 +140,7 @@ do nob=1,nobs_conv
    endif
 enddo
 dfs_sum = dfs_sum + dfs
-print *,'tcp = ',n,dfs/nobstot
+print *,'tcp = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=1,nobs_conv
    ob_type = trim(adjustl(obtype(nob)))
@@ -149,7 +150,7 @@ do nob=1,nobs_conv
    endif
 enddo
 dfs_sum = dfs_sum + dfs
-print *,'gps = ',n,dfs/nobstot
+print *,'gps = ',n,(dfs/nobstot)/dfs_tot
 print *,'dfs_conv,dfs_sum = ',dfs_conv,dfs_sum/nobstot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
@@ -159,7 +160,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'amsua = ',n,dfs/nobstot
+print *,'amsua = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
    ob_type = trim(adjustl(obtype(nob)))
@@ -168,7 +169,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'atms = ',n,dfs/nobstot
+print *,'atms = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
    ob_type = trim(adjustl(obtype(nob)))
@@ -177,7 +178,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'mhs = ',n,dfs/nobstot
+print *,'mhs = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
    ob_type = trim(adjustl(obtype(nob)))
@@ -186,7 +187,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'airs = ',n,dfs/nobstot
+print *,'airs = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
    ob_type = trim(adjustl(obtype(nob)))
@@ -195,7 +196,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'iasi = ',n,dfs/nobstot
+print *,'iasi = ',n,(dfs/nobstot)/dfs_tot
 dfs = 0.; n = 0
 do nob=nobs_conv+nobs_oz+1,nobstot
    ob_type = trim(adjustl(obtype(nob)))
@@ -204,7 +205,7 @@ do nob=nobs_conv+nobs_oz+1,nobstot
       dfs = dfs + obsprd(nob)/oberrvar_orig(nob)
    endif
 enddo
-print *,'cris = ',n,dfs/nobstot
+print *,'cris = ',n,(dfs/nobstot)/dfs_tot
 end subroutine print_dfs
 
 subroutine print_innovstats(obfit,obsprd)
