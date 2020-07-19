@@ -414,7 +414,13 @@ grdloop: do npt=1,numptsperproc(nproc+1)
          else
             vdist = zero
          endif
-         dist = sqrt(sresults(nob)%dis/corrlengthsq(nf)+vdist*vdist)
+         if (nobsl_max > 0 .and. corrlength < 0) then
+             ! set R localization scale to be max distance to find nobsl_max obs
+             dist = sqrt(sresults(nob)%dis/sresults(nobsl)%dis+vdist*vdist)
+         else
+             ! set R localization scale to specificed distance
+             dist = sqrt(sresults(nob)%dis/corrlength+vdist*vdist)
+         endif
          if (dist >= one) cycle
          rloc(nobsl2)=taper(dist)
          oindex(nobsl2)=nf
