@@ -258,13 +258,18 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
 ! exchange obs prior ensemble members across all tasks to fully populate shared
 ! memory array pointer on each node.
     if (nproc_shm == 0) then
-       call mpi_allreduce(mpi_in_place,anal_ob,nanals*nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
+       mem_ob = 0.
+       do na=1,nanals
+           mem_ob(:) = anal_ob(na,:)
+           call mpi_allreduce(mpi_in_place,mem_ob,nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
+           anal_ob(na,:) = mem_ob(:)
+       enddo
        !print *,nproc,'min/max anal_ob',minval(anal_ob),maxval(anal_ob)
        if (neigv > 0) then
           mem_ob_modens = 0.
           do na=1,nanals
              mem_ob_modens(:,:) = anal_ob_modens(neigv*(na-1)+1:neigv*na,:)
-             call mpi_allreduce(mpi_in_place,mem_ob_modens,neigv*nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
+             call mpi_allreduce(mpi_in_place,mem_ob_modens,nobs_tot*neigv,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
              anal_ob_modens(neigv*(na-1)+1:neigv*na,:) = mem_ob_modens(:,:)
           enddo
        endif
