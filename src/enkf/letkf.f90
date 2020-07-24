@@ -691,7 +691,6 @@ subroutine letkf_core(nobsl,hxens,hxens_orig,dep,&
 !$$$ end documentation block
 
 implicit none
-logical, intent(in) :: getkf_inflation,denkf,getkf
 integer(i_kind), intent(in) :: nobsl,nanals,neigv
 real(r_kind),dimension(nobsl),intent(in ) :: rdiaginv,rloc
 real(r_kind),dimension(nanals,nobsl),intent(inout)  :: hxens
@@ -712,6 +711,7 @@ integer(i_kind) isuppz(2*nanals)
 real(r_kind) vl,vu,normfact
 integer(i_kind), allocatable, dimension(:) :: iwork
 real(r_kind), dimension(:), allocatable :: work1
+logical, intent(in) :: getkf_inflation,denkf,getkf
 
 if (neigv < 1) then
   print *,'neigv must be >=1 in letkf_core'
