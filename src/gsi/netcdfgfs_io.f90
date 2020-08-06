@@ -1201,7 +1201,7 @@ contains
     use mpimod, only: mype
     use kinds, only: r_kind,i_kind,r_single
     use gridmod, only: nlat,nlon
-    use gsi_4dvar, only: lhourly_da,liau,lfg_only
+    use gsi_4dvar, only: lhourly_da,liau,lfirst_hrly_analysis
     use constants, only: zero
     use module_fv3gfs_ncio, only: Dataset, Variable, Dimension, open_dataset,&
                            close_dataset, get_dim, read_vardata, get_idate_from_time_units 
@@ -1229,8 +1229,8 @@ contains
 
     if (lhourly_da) then
        if(      liau) filename='sfcf04_anlgrid'
-       if(.not. liau .and.      lfg_only) filename='sfcf02_anlgrid'
-       if(.not. liau .and..not. lfg_only) filename='sfcf01_anlgrid'
+       if(.not. liau .and.      lfirst_hrly_analysis) filename='sfcf02_anlgrid'
+       if(.not. liau .and..not. lfirst_hrly_analysis) filename='sfcf01_anlgrid'
     else
        filename='sfcf06_anlgrid'
     end if
@@ -1601,6 +1601,7 @@ contains
     use obsmod, only: iadate
 
     use gsi_4dvar, only: ibdate,nhr_obsbin,lwrite4danl
+    use gsi_4dvar, only: lhourly_da,liau,lfirst_hrly_analysis
     use general_sub2grid_mod, only: sub2grid_info
     use egrid2agrid_mod,only: g_egrid2agrid,g_create_egrid2agrid,egrid2agrid_parm,destroy_egrid2agrid
     use constants, only: two,pi,half,deg2rad
@@ -1730,6 +1731,10 @@ contains
        mydate=ibdate
        fha(:)=zero ; ida=0; jda=0
        fha(2)=real(nhr_obsbin*(ibin-1))  ! relative time interval in hours
+       if(lhourly_da) then
+          if(.not. liau .and.      lfirst_hrly_analysis) fha(2)=real(1) !1=8z, 2=9z, 3=10z
+          if(.not. liau .and..not. lfirst_hrly_analysis) fha(2)=real(1) !1=fail?
+       end if
        ida(1)=mydate(1) ! year
        ida(2)=mydate(2) ! month
        ida(3)=mydate(3) ! day
@@ -2751,7 +2756,7 @@ contains
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use general_commvars_mod, only: ltosi,ltosj
-    use gsi_4dvar, only: lhourly_da,liau,lfg_only
+    use gsi_4dvar, only: lhourly_da,liau,lfirst_hrly_analysis
 
     use obsmod, only: iadate
 
@@ -2801,8 +2806,8 @@ contains
 !   Determine fname_ges
     if (lhourly_da) then
        if(      liau) fname_ges='sfcf04'
-       if(.not. liau .and.      lfg_only) fname_ges='sfcf02'
-       if(.not. liau .and..not. lfg_only) fname_ges='sfcf01'
+       if(.not. liau .and.      lfirst_hrly_analysis) fname_ges='sfcf02'
+       if(.not. liau .and..not. lfirst_hrly_analysis) fname_ges='sfcf01'
     else
        fname_ges='sfcf06'
     end if
@@ -2973,7 +2978,7 @@ contains
 
     use guess_grids, only: isli2
     use gsi_nstcouplermod, only: nst_gsi,zsea1,zsea2
-    use gsi_4dvar, only: lhourly_da,liau,lfg_only
+    use gsi_4dvar, only: lhourly_da,liau,lfirst_hrly_analysis
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
 
     use module_fv3gfs_ncio, only: open_dataset, close_dataset, Dimension, Dataset,&
@@ -3046,8 +3051,8 @@ contains
     if (lhourly_da) then
        if(      liau) fname_sfcges = 'sfcf04'
        if(      liau) fname_nstges = 'nstf04'
-       if(.not. liau .and.      lfg_only) fname_sfcges = 'sfcf02'
-       if(.not. liau .and..not. lfg_only) fname_nstges = 'nstf01'
+       if(.not. liau .and.      lfirst_hrly_analysis) fname_sfcges = 'sfcf02'
+       if(.not. liau .and..not. lfirst_hrly_analysis) fname_nstges = 'nstf01'
     else
        fname_sfcges = 'sfcf06'
        fname_nstges = 'nstf06'
