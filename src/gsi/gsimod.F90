@@ -1078,13 +1078,8 @@
 !                         
   namelist/hybrid_ensemble/l_hyb_ens,uv_hyb_ens,q_hyb_ens,aniso_a_en,generate_ens,n_ens,nlon_ens,nlat_ens,jcap_ens,&
                 pseudo_hybens,merge_two_grid_ensperts,regional_ensemble_option,fv3sar_bg_opt,fv3sar_ensemble_opt,full_ensemble,pwgtflg,&
-<<<<<<< HEAD
                 jcap_ens_test,beta_s0,beta_e0,s_ens_h,s_ens_v,readin_localization,eqspace_ensgrid,readin_beta,&
-                grid_ratio_ens, &
-=======
-                jcap_ens_test,beta_s0,s_ens_h,s_ens_v,readin_localization,eqspace_ensgrid,readin_beta,&
                 grid_ratio_ens,write_generated_ens, &
->>>>>>> origin/bugfix/generate_ens
                 oz_univ_static,write_ens_sprd,use_localization_grid,use_gfs_ens, &
                 i_en_perts_io,l_ens_in_diff_time,ensemble_path,ens_fast_read,sst_staticB
 
