@@ -329,7 +329,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
           maxdfs = -9.9e31
           do nob=1,nobstot
              rloc(nob) = sum((obloc(:,nob)-grdloc_chunk(:,npt))**2,1)
-             dist = sqrt(rloc(nob)/corrlengthsq(nob))
+             dist = sqrt(rloc(nob)/corrsq)
              if (dist < 1.0 - eps .and. &
                  oberrvaruse(nob) < 1.e10_r_single) then
                 nobsl = nobsl + 1
@@ -419,7 +419,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
              dist = sqrt(sresults(nob)%dis/sresults(nobsl)%dis+vdist*vdist)
          else
              ! set R localization scale to specificed distance
-             dist = sqrt(sresults(nob)%dis/corrlength+vdist*vdist)
+             dist = sqrt(sresults(nob)%dis/corrsq+vdist*vdist)
          endif
          if (dist >= one) cycle
          rloc(nobsl2)=taper(dist)

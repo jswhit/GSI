@@ -652,7 +652,7 @@ end do
 
 ! state fields
 nstatefields=0
-do while (nhr_state(nstatefields+1) > 0)
+do while (nhr_state(nstatefields+1) >= 0)
    write(charfhr_state(nstatefields+1),'(i2.2)') nhr_state(nstatefields+1)
    if (trim(statefileprefixes(nstatefields+1)) .eq. "") then
      ! default first-guess file prefix

@@ -258,12 +258,18 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
 ! exchange obs prior ensemble members across all tasks to fully populate shared
 ! memory array pointer on each node.
     if (nproc_shm == 0) then
-       mem_ob = 0.
-       do na=1,nanals
-           mem_ob(:) = anal_ob(na,:)
-           call mpi_allreduce(mpi_in_place,mem_ob,nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
-           anal_ob(na,:) = mem_ob(:)
-       enddo
+       if (real(nanals)*real(nobs_tot) < 2**32/2. - 1) then
+          call mpi_allreduce(mpi_in_place,anal_ob,nanals*nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
+       else
+          ! count won't fit in 32-bit integer and mpi_allreduce doesn't handle
+          ! 64 bit counts.  Split up into smaller chunks.
+          mem_ob = 0.
+          do na=1,nanals
+              mem_ob(:) = anal_ob(na,:)
+              call mpi_allreduce(mpi_in_place,mem_ob,nobs_tot,mpi_real4,mpi_sum,mpi_comm_shmemroot,ierr)
+              anal_ob(na,:) = mem_ob(:)
+          enddo
+       endif
        !print *,nproc,'min/max anal_ob',minval(anal_ob),maxval(anal_ob)
        if (neigv > 0) then
           mem_ob_modens = 0.
@@ -286,41 +292,31 @@ subroutine mpi_getobs(obspath, datestring, nobs_conv, nobs_oz, nobs_sat, nobs_to
 ! make anal_ob contain ob prior ensemble *perturbations*
     analsi=1._r_single/float(nanals)
     analsim1=1._r_single/float(nanals-1)
-!$omp parallel do private(nob)
     do nob=1,nobs_tot
        ensmean_obbc(nob)  = sum(anal_ob(:,nob))*analsi
     enddo
-!$omp end parallel do
     if (nproc_shm == 0) then
-!$omp parallel do private(nob)
        do nob=1,nobs_tot
 ! remove ensemble mean from each member.
 ! ensmean_obbc is biascorrected ensemble mean (anal_ob is ens pert)
           anal_ob(:,nob) = anal_ob(:,nob)-ensmean_obbc(nob)
        enddo
-!$omp end parallel do
        if (neigv > 0) then
-!$omp parallel do private(nob)
           do nob=1,nobs_tot
              anal_ob_modens(:,nob) = anal_ob_modens(:,nob)-ensmean_obbc(nob)
           enddo
-!$omp end parallel do
        endif
     endif
     call mpi_barrier(mpi_comm_world,ierr)
-!$omp parallel do private(nob)
     do nob=1,nobs_tot
 ! compute sprd
        sprd_ob(nob) = sum(anal_ob(:,nob)**2)*analsim1
     enddo    
-!$omp end parallel do
 ! modulated ensemble.
     if (neigv > 0) then
-!$omp parallel do private(nob)
         do nob=1,nobs_tot
           sprd_ob(nob) = sum(anal_ob_modens(:,nob)**2)*analsim1
         enddo
-!$omp end parallel do
     endif
     if (nproc == 0) then
        print *, 'prior spread conv: ', minval(sprd_ob(1:nobs_conv)), maxval(sprd_ob(1:nobs_conv))

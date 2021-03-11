@@ -42,7 +42,7 @@ subroutine general_write_gfsatm(grd,sp_a,sp_b,filename,mype_out,&
     use general_commvars_mod, only: load_grid
     use ncepgfs_io, only: sigio_cnvtdv8,sighead
     use constants, only: zero,zero_single,one,fv,qcmin
-    use gsi_4dvar, only: ibdate,nhr_obsbin,lwrite4danl
+    use gsi_4dvar, only: ibdate,nhr_obsbin,lwrite4danl,lhourly_da,liau,lfirst_hrly_analysis
     use gsi_bundlemod, only: gsi_bundle
     use gsi_bundlemod, only: gsi_bundlegetpointer
 
@@ -140,6 +140,10 @@ subroutine general_write_gfsatm(grd,sp_a,sp_b,filename,mype_out,&
             mydate=ibdate
             fha(:)=zero ; ida=0; jda=0
             fha(2)=real(nhr_obsbin*(ibin-1))  ! relative time interval in hours
+            !if(lhourly_da) then
+            !   if(.not. liau .and.      lfirst_hrly_analysis) fha(2)=real(1)
+            !   if(.not. liau .and..not. lfirst_hrly_analysis) fha(2)=real(0)
+            !end if
             ida(1)=mydate(1) ! year
             ida(2)=mydate(2) ! month
             ida(3)=mydate(3) ! day
