@@ -934,7 +934,7 @@ end subroutine write_ozobs_data_bin
 subroutine write_ozobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag, &
                                  x_fit, x_sprd, x_used, id, gesid)
   use netcdf, only: nf90_inq_dimid, nf90_open, nf90_close, NF90_NETCDF4, &
-                    nf90_inquire_dimension, NF90_NOWRITE, NF90_WRITE, nf90_create, nf90_def_dim
+                    nf90_inquire_dimension, NF90_WRITE, NF90_NOWRITE, nf90_create, nf90_def_dim
   use ncdw_climsg, only: nclayer_check
 
   use constants, only: r_missing
