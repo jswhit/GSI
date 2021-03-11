@@ -453,7 +453,7 @@ subroutine gesinfo
               ! FV3GFS write component does not write JCAP to the NEMSIO file
               if ( mype == mype_out ) then
                  write(6,*)'GESINFO:  ***WARNING*** guess jcap inconsistent with namelist'
-                 write(6,*)'GESINFO:  ***WARNING*** this is a FV3GFS NEMSIO file'
+                 write(6,*)'GESINFO:  ***WARNING*** this is a FV3GFS NEMSIO/NetCDF file'
               endif
               fatal = .false.
            else
@@ -481,7 +481,7 @@ subroutine gesinfo
         else
            write(6,200) gfshead%jcap,gfshead%levs,gfshead%latb,gfshead%lonb,&
                 gfshead%ntrac,gfshead%ncldt,idvc5,gfshead%nvcoord,idsl5
-200        format('GESINFO:  jcap_b=',i4,', levs=',i3,', latb=',i5,&
+200        format('GESINFO:  jcap_b=',i5,', levs=',i3,', latb=',i5,&
                 ', lonb=',i5,', ntrac=',i3,', ncldt=',i3,', idvc=',i3,&
                 ', nvcoord=',i3,', idsl=',i3)
         end if
@@ -543,7 +543,7 @@ subroutine gesinfo
   ida(:)=0
   jda(:)=0
   fha(:)=zero
-  fha(2)=-float(int(min_offset/60))
+  fha(2)=-float(min_offset/60)
   fha(3)=-(min_offset+fha(2)*r60)
   ida(1:3)=iadate(1:3)
   ida(5:6)=iadate(4:5)
@@ -574,7 +574,7 @@ subroutine gesinfo
 ! Get time offset
   call time_4dvar(ianldate,time_offset)
 #ifdef RR_CLOUDANALYSIS
-  fha(2)=float(int(min_offset/60))
+  fha(2)=float(min_offset/60)
   fha(3)=(min_offset-fha(2)*r60)
   time_offset=time_offset+fha(3)/r60
 #endif

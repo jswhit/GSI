@@ -463,7 +463,8 @@ implicit none
 integer(i_kind),intent(in   ) :: idate   ! Date (yyyymmddhh)
 real(r_kind)   ,intent(  out) :: step4d  ! Time since start of 4D-Var window (hours)
 
-integer(i_kind) iyr,imo,idy,ihr,nmin_obs,nhrobs,nhrbgn,nhroff
+integer(i_kind) iyr,imo,idy,ihr,nmin_obs
+real(r_kind) nhrobs,nhrbgn,nhroff
 integer(i_kind),dimension(5) :: idate5
 
 ihr=idate
@@ -485,7 +486,7 @@ if (MOD(nmin_obs,60)/=0) then
 end if
 
 nhrobs=nmin_obs*r60inv
-nhrbgn=NINT(real(iwinbgn,r_kind)*r60inv)
+nhrbgn=real(iwinbgn,r_kind)*r60inv)
 nhroff=nhrobs-nhrbgn
 
 step4d=real(nhroff,r_kind)
