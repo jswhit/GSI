@@ -321,6 +321,11 @@ if (nproc <= ntasks_io-1) then
             write(6,100) trim(cvars3d(nvar)),   &
                 minval(grdin_mean(:,clevels(nvar-1)+1:clevels(nvar),nb,1)),     &
                 maxval(grdin_mean(:,clevels(nvar-1)+1:clevels(nvar),nb,1))
+            if (trim(cvars3d(nvar)) .eq. 'dprs') then 
+                do ne=1,nlevs
+                   print *,'min/max dprs increment level ',ne,' = ',minval(grdin_mean(:,clevels(nvar-1)+ne,nb,1)),maxval(grdin_mean(:,clevels(nvar-1)+ne,nb,1))
+                enddo
+            endif
          enddo
          do nvar=1,nc2d
             write(6,100) trim(cvars2d(nvar)),   &

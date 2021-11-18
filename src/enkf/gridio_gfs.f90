@@ -45,7 +45,7 @@
                    cliptracers,datapath,imp_physics,use_gfs_ncio,cnvw_option, &
                    nanals
  use kinds, only: i_kind,r_double,r_kind,r_single
- use gridinfo, only: ntrunc,npts  ! gridinfo must be called first!
+ use gridinfo, only: ntrunc,npts,ptop  ! gridinfo must be called first!
  use specmod, only: sptezv_s, sptez_s, init_spec_vars, ndimspec => nc, &
                     isinitialized
  use reducedgrid_mod, only: regtoreduced, reducedtoreg
@@ -334,13 +334,18 @@
   if (iope==0) then
      do k=1,nlevs
         krev = nlevs-k+1
+        ! pressure at bottom of layer interface (for gps jacobian, see prsltmp in setupbend.f90)
+        if (prse_ind > 0) then
+           ug(:) = pressi(:,k)
+           call copytogrdin(ug,pslg(:,k))
+           ! Jacobian for gps in pressure is saved in different units in GSI; need to
+           ! multiply pressure by 0.1
+           grdin(:,levels(prse_ind-1)+k,nb,ne) = 0.1*pslg(:,k)
+        endif
         ! layer pressure from phillips vertical interolation
         ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
                 (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
         call copytogrdin(ug,pslg(:,k))
-        ! Jacobian for gps in pressure is saved in different units in GSI; need to
-        ! multiply pressure by 0.1
-        if (prse_ind > 0)     grdin(:,levels(prse_ind-1)+k,nb,ne) = 0.1*pslg(:,k)
      end do
      if (pseudo_rh) then
         call genqsat1(q,qsat(:,:,nb,ne),pslg,tv,ice,npts,nlevs)
@@ -456,7 +461,7 @@
   type(Dimension) :: londim,latdim,levdim
   type(nemsio_gfile) :: gfilesfc
 
-  integer(i_kind) :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
+  integer(i_kind) :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind, dprs_ind
   integer(i_kind) :: qr_ind, qs_ind, qg_ind
   integer(i_kind) :: tsen_ind, ql_ind, qi_ind, prse_ind
   integer(i_kind) :: ps_ind, pst_ind, sst_ind
@@ -546,6 +551,7 @@
   qr_ind  = getindex(vars3d, 'qr')  ! QR (3D)
   qs_ind  = getindex(vars3d, 'qs')  ! QS (3D)
   qg_ind  = getindex(vars3d, 'qg')  ! QG (3D)
+  dprs_ind = getindex(vars3d, 'dprs') ! DPRES (instead of ps) (3D)
   ps_ind  = getindex(vars2d, 'ps')  ! Ps (2D)
   pst_ind = getindex(vars2d, 'pst') ! Ps tendency (2D)   // equivalent of
                                      ! old logical massbal_adjust, if non-zero
@@ -553,13 +559,13 @@
   use_full_hydro = ( ql_ind > 0 .and. qi_ind > 0  .and. &
                      qr_ind > 0 .and. qs_ind > 0 .and. qg_ind > 0 )
 
-!  if (nproc == 0) then
-!    print *, 'indices: '
-!    print *, 'u: ', u_ind, ', v: ', v_ind, ', tv: ', tv_ind, ', tsen: ', tsen_ind
-!    print *, 'q: ', q_ind, ', oz: ', oz_ind, ', cw: ', cw_ind, ', qi: ', qi_ind
-!    print *, 'ql: ', ql_ind, ', prse: ', prse_ind
-!    print *, 'ps: ', ps_ind, ', pst: ', pst_ind, ', sst: ', sst_ind
-!  endif
+  if (nproc == 0) then
+    print *, 'indices: '
+    print *, 'u: ', u_ind, ', v: ', v_ind, ', tv: ', tv_ind, ', tsen: ', tsen_ind
+    print *, 'q: ', q_ind, ', oz: ', oz_ind, ', cw: ', cw_ind, ', qi: ', qi_ind
+    print *, 'ql: ', ql_ind, ', prse: ', prse_ind, ', dprs_ind: ', dprs_ind
+    print *, 'ps: ', ps_ind, ', pst: ', pst_ind, ', sst: ', sst_ind
+  endif
 
   if (.not. isinitialized) call init_spec_vars(nlons,nlats,ntrunc,4)
 
@@ -851,6 +857,17 @@
         if (tv_ind > 0)   grdin(:,levels(tv_ind-1)+k,nb,ne) = tv(:,k)
         if (q_ind > 0)    grdin(:,levels( q_ind-1)+k,nb,ne) =  q(:,k)
      enddo
+     if (dprs_ind > 0) then
+        call read_vardata(dset,'dpres', ug3d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading dpres'
+           call stop2(25)
+        endif
+        do k=1,nlevs
+           ug = reshape(ug3d(:,:,nlevs-k+1),(/nlons*nlats/))
+           call copytogrdin(ug,grdin(:,levels(dprs_ind-1)+k,nb,ne))
+        enddo
+     endif
      if (oz_ind > 0) then
         call read_vardata(dset, 'o3mr', ug3d,errcode=iret)
         if (iret /= 0) then
@@ -1885,7 +1902,7 @@
   type(sigio_data) sigdata
   type(nemsio_gfile) :: gfilein,gfileout
 
-  integer :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
+  integer :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind, dprs_ind
   integer :: ps_ind, pst_ind, nbits
   integer :: ql_ind, qi_ind, qr_ind, qs_ind, qg_ind
 
@@ -2018,6 +2035,7 @@
   tv_ind  = getindex(vars3d, 'tv')  ! Tv (3D)
   q_ind   = getindex(vars3d, 'q')   ! Q (3D)
   ps_ind  = getindex(vars2d, 'ps')  ! Ps (2D)
+  dprs_ind  = getindex(vars3d, 'dprs')  ! dpres (3D)
   oz_ind  = getindex(vars3d, 'oz')  ! Oz (3D)
   cw_ind  = getindex(vars3d, 'cw')  ! CW (3D)
   ql_ind  = getindex(vars3d, 'ql')  ! QL (3D)
@@ -2271,26 +2289,48 @@
      psfg = 0.01*reshape(values_2d,(/nlons*nlats/))
      ug = 0_r_kind
      if (ps_ind > 0) then
-       call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),ug)
+        call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),ug)
+        ! add increment to background.
+        psg = psfg + ug ! analysis pressure in mb.
+        values_2d = 100.*reshape(psg,(/nlons,nlats/))
+        call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error writing pressfc'
+           call stop2(29)
+        endif
+        !print *,'nanal,min/max psfg,min/max inc',nanal,minval(values_2d),maxval(values_2d),minval(ug),maxval(ug)
      endif
-     ! add increment to background.
-     psg = psfg + ug ! analysis pressure in mb.
-     values_2d = 100.*reshape(psg,(/nlons,nlats/))
-     call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error writing pressfc'
-        call stop2(29)
-     endif
-     !print *,'nanal,min/max psfg,min/max inc',nanal,minval(values_2d),maxval(values_2d),minval(ug),maxval(ug)
      if (has_var(dsfg,'dpres')) then
         call read_vardata(dsfg,'dpres',ug3d)
         allocate(vg3d(nlons,nlats,nlevs))
-        ! infer dpres increment from ps increment
-        do k=1,nlevs
-           vg = ug*(bk(k)-bk(k+1)) ! ug is ps increment
-           vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) +&
-           100_r_kind*reshape(vg,(/nlons,nlats/))
-        enddo
+        if (dprs_ind < 0) then ! no dpres control variable.
+            ! infer dpres increment from ps increment
+            do k=1,nlevs
+               vg = ug*(bk(k)-bk(k+1)) ! ug is ps increment
+               vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) +&
+               100_r_kind*reshape(vg,(/nlons,nlats/))
+            enddo
+        else ! add dpres increment to background
+            allocate(values_3d(nlons,nlats,nlevs))
+            do k=1,nlevs
+               ug = 0_r_kind
+               !if (bk(k)-bk(k+1) .gt. 0.) call copyfromgrdin(grdin(:,levels(dprs_ind-1)+k,nb,ne),ug)
+               call copyfromgrdin(grdin(:,levels(dprs_ind-1)+k,nb,ne),ug)
+               values_2d = reshape(ug,(/nlons,nlats/))
+               !if (nanal .eq. 1) print *,'min/max dprs inc nanal=1',minval(values_2d),maxval(values_2d),bk(k)-bk(k+1)
+               values_3d(:,:,k) = values_2d
+               vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) + values_2d
+            enddo
+            ! update ps consistently, compute psincrement, add psincrement to background.
+            values_2d = sum(values_3d,3) ! psincrement is vertical sum of delp increment
+            !print *,'nanal,min/max psfg,min/max inc',nanal,minval(psfg),maxval(psfg),minval(0.01*values_2d),maxval(0.01*values_2d)
+            values_2d = values_2d + 100.*reshape(psfg,(/nlons,nlats/)) ! add background
+            call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
+            if (iret /= 0) then
+               print *,'error writing pressfc'
+               call stop2(29)
+            endif
+        endif
         if (has_attr(dsfg, 'nbits', 'dpres') .and. .not. nocompress) then
           call read_attribute(dsfg, 'nbits', nbits, 'dpres')
           ug3d = vg3d
@@ -2864,7 +2904,7 @@
      if (cliptracers)  where (vg3d < clip) vg3d = clip
 
      ! write analysis T
-     allocate(values_3d(nlons,nlats,nlevs))
+     if (.not. allocated(values_3d)) allocate(values_3d(nlons,nlats,nlevs))
      allocate(tmp_anal(nlons,nlats,nlevs))
      tmp_anal = tv_anal/(1. + fv*vg3d) ! convert Tv back to T, save q as vg3d
      values_3d = tmp_anal

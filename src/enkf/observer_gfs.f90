@@ -1,10 +1,12 @@
 module observer_enkf
-use statevec, only: nsdim, ns3d, ns2d, slevels
+use statevec, only: nsdim, ns3d, ns2d, slevels, svars3d
+use mpeu_util, only: getindex
 use params, only: nlevs, neigv
 
 private
 public init_observer_enkf, setup_linhx, calc_linhx, calc_linhx_modens,&
-       destroy_observer_enkf
+       destroy_observer_enkf, calc_linhx_psfromdelp, &
+       calc_linhx_modens_psfromdelp
 integer, allocatable, dimension(:) ::  kindx
 
 contains
@@ -127,6 +129,80 @@ subroutine setup_linhx(rlat, rlon, time, ix, delx, ixp, delxp, iy, dely,  &
 
 end subroutine setup_linhx
 
+subroutine calc_linhx_psfromdelp(hx, dens, dhx_dx, hxpert, hx_ens, &
+                      ix, delx, ixp, delxp, iy, dely, iyp, delyp, &
+                      it, delt, itp, deltp, delp)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    calc_linhx
+!   prgmmr: shlyaeva         org: esrl/psd            date: 2016-11-29
+!
+! abstract: 
+!
+! program history log:
+!   2016-11-29  shlyaeva
+!
+!   input argument list:
+!     hx: observation prior ensemble mean
+!     dens:  state space ensemble perturbations
+!     dhx_dx: Jacobian
+!     ix,delx,ixp,delxp,iy,dely,iyp,delyp,it,delt,itp,deltp: horizontal
+!       and temporal linear interpolation indices and weights.
+!
+!   output argument list:
+!     hx_ens: observation prior ensemble perturbation
+!     hxpert: ens pert profile that multiplies dhx_dx to yield hx_ens (in
+!     compressed format - temporally and horizontally interpolated)
+!
+! attributes:
+!   language: f95
+!
+!$$$
+  use kinds, only: r_kind,i_kind,r_single
+  use params, only: nstatefields, nlons
+  use gridinfo, only: npts
+  use statevec, only: nsdim
+  use constants, only: zero,one
+  use sparsearr, only: sparr, raggedarr
+  use mpisetup
+  implicit none
+
+! Declare passed variables
+  real(r_single)                                   ,intent(in   ) :: hx           ! H(x_mean)
+  real(r_single),dimension(npts,nsdim,nstatefields),intent(in   ) :: dens         ! x_ens - x_mean, state vector space
+  integer(i_kind), intent(in) :: ix, iy, it, ixp, iyp, itp
+  real(r_kind), intent(in) :: delx, dely, delxp, delyp, delt, deltp
+  type(sparr)                                      ,intent(in   ) :: dhx_dx       ! dH(x)/dx |x_mean profiles
+  type(raggedarr)                                  ,intent(inout) :: hxpert       ! interpolated background
+  real(r_single)                                   ,intent(  out) :: hx_ens       ! H (x_ens)
+  integer(i_kind) i,j,k
+  real(r_single),dimension(nlevs), intent(inout) :: delp
+  integer(i_kind) dprs_ind
+
+  ! get profile of delp perturbation at ps ob location.
+  ! (dens has ens perturbations
+  dprs_ind = getindex(svars3d, 'dprs')
+  do k = 1, nlevs
+     j = slevels(dprs_ind-1)+k ! vertical index for delp
+     delp(k) = 0.01_r_single*(( dens( ix*nlons  + iy , j, it) *delxp*delyp          &
+                      + dens( ixp*nlons + iy , j, it) *delx *delyp          &
+                      + dens( ix*nlons  + iyp, j, it) *delxp*dely           &
+                      + dens( ixp*nlons + iyp, j, it) *delx *dely )*deltp   &
+                    + ( dens( ix*nlons  + iy , j, itp)*delxp*delyp          &
+                      + dens( ixp*nlons + iy , j, itp)*delx *delyp          &
+                      + dens( ix*nlons  + iyp, j, itp)*delxp*dely           &
+                      + dens( ixp*nlons + iyp, j, itp)*delx *dely )*delt)
+  enddo
+
+  ! interpolate state horizontally and in time and do  dot product with dHx/dx profile
+  ! saves from calculating interpolated x_ens for each state variable
+  hx_ens = hx
+  hxpert%val(1) = sum(delp)
+  hx_ens = hx_ens + dhx_dx%val(1) * hxpert%val(1)
+
+  return
+end subroutine calc_linhx_psfromdelp
+
 subroutine calc_linhx(hx, dens, dhx_dx, hxpert, hx_ens, &
                       ix, delx, ixp, delxp, iy, dely, iyp, delyp, &
                       it, delt, itp, deltp)
@@ -193,6 +269,65 @@ subroutine calc_linhx(hx, dens, dhx_dx, hxpert, hx_ens, &
 
   return
 end subroutine calc_linhx
+
+subroutine calc_linhx_modens_psfromdelp(hx, dhx_dx, hxpert, delp, hx_ens, vscale)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    calc_linhx
+!   prgmmr: shlyaeva         org: esrl/psd            date: 2016-11-29
+!
+! abstract: 
+!
+! program history log:
+!   2016-11-29  shlyaeva, initial version
+!   2019-12-09  whitaker, optimizations
+!
+!   input argument list:
+!     hx: observation prior ensemble mean
+!     dhx_dx: Jacobian
+!     hxpert: 'unmodulated' ens pert profile that multiplies dhx_dx
+!     vscale: vertical scaling from vertical localization eigenvectors used
+!       to generate modulated ensemble.
+!
+!   output argument list:
+!     hx_ens: observation prior ensemble perturbation for each verticali
+!      localization eigenvector
+!
+! attributes:
+!   language: f95
+!
+!$$$
+  use kinds, only: r_kind,i_kind,r_single
+  use sparsearr, only: sparr, raggedarr
+  use mpisetup
+  implicit none
+
+! Declare passed variables
+  real(r_single)                                   ,intent(in   ) :: hx           ! H(x_mean)
+  type(sparr)                                      ,intent(in   ) :: dhx_dx       ! dH(x)/dx |x_mean profiles
+  type(raggedarr)                                  ,intent(in   ) :: hxpert       ! interpolated background
+  real(r_single)                                   ,intent(  out) :: hx_ens(neigv)! H (x_ens)
+  real(r_double),dimension(neigv,nlevs+1)          ,intent(in   ) :: vscale       ! vertical scaling (for modulated ens)
+  real(r_single),dimension(nlevs), intent(in) :: delp
+  real(r_single),dimension(neigv) :: psens
+  integer(i_kind) i, j, k, dprs_ind
+
+  ! recompute hxpert from modulated delp
+  dprs_ind = getindex(svars3d, 'dprs')
+  psens = 0
+  do k=1,nlevs
+     j = slevels(dprs_ind-1)+k ! vertical index for delp
+     psens(:) = psens(:) + vscale(:,kindx(j)) * delp(k)
+  enddo
+  !print *,'ps modulated ens:',vscale(:,kindx(dhx_dx%ind(1))) * hxpert%val(1)
+  !print *,'ps from delp modulated ens:',psens
+
+  ! calculate modulated ensemble in ob space
+  hx_ens = hx ! ens mean
+  hx_ens(:) = hx_ens(:) + dhx_dx%val(1) * psens(:) ! modulated perturbations
+
+  return
+end subroutine calc_linhx_modens_psfromdelp
 
 subroutine calc_linhx_modens(hx, dhx_dx, hxpert, hx_ens, vscale)
 !$$$  subprogram documentation block
