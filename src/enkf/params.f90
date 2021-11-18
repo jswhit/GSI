@@ -190,7 +190,7 @@ logical,public :: simple_partition = .true.
 logical,public :: reducedgrid = .false.
 logical,public :: univaroz = .true.
 logical,public :: regional = .false.
-logical,public :: use_gfs_ncio = .true.
+logical,public :: use_gfs_ncio = .true. ! legacy, must be .true.
 logical,public :: arw = .false.
 logical,public :: nmm = .true.
 logical,public :: nmm_restart = .true.
@@ -234,7 +234,7 @@ logical,public :: write_spread_diag = .false.
 ! ensemble perturbations in observation space.
 logical,public :: lobsdiag_forenkf = .false.
 ! if true, use netcdf diag files, otherwise use binary diags
-logical,public :: netcdf_diag = .true.
+logical,public :: netcdf_diag = .true. ! legacy, must be .true.
 
 ! use fv3 cubed-sphere tiled restart files
 logical,public :: fv3_native = .false.
