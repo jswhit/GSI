@@ -64,8 +64,8 @@ real(r_single),public, allocatable, dimension(:,:) :: logp
 integer,public :: npts
 integer,public :: ntrunc
 ! supported variable names in anavinfo
-character(len=max_varname_length),public, dimension(13) :: vars3d_supported = (/'u   ', 'v   ', 'tv  ', 'q   ', 'oz  ', 'cw  ', 'tsen', 'prse', &
-                                                                                'ql  ', 'qi  ', 'qr  ', 'qs  ', 'qg  '/) 
+character(len=max_varname_length),public, dimension(14) :: vars3d_supported = (/'u   ', 'v   ', 'tv  ', 'q   ', 'oz  ', 'cw  ', 'tsen', 'prse', &
+                                                                                'ql  ', 'qi  ', 'qr  ', 'qs  ', 'qg  ', 'dprs'/) 
 character(len=max_varname_length),public, dimension(3)  :: vars2d_supported = (/'ps ', 'pst', 'sst' /)
 ! supported variable names in anavinfo
 contains

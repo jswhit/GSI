@@ -231,6 +231,10 @@ if (smoothparm .gt. zero) then
    do nn=1,ncdim
      call mpi_allreduce(mpi_in_place,covinfglobal(1,nn),npts,mpi_real4,mpi_sum,mpi_comm_world,ierr)
    enddo
+   ! top level inflation is 1/2 the level below
+   do i=1,nc3d
+      covinfglobal(:,i*nlevs)=1.+0.5*(covinfglobal(:,i*nlevs-1)-1.)
+   enddo
    call smooth(covinfglobal)
    where (covinfglobal < covinflatemin) covinfglobal = covinflatemin
    where (covinfglobal > covinflatemax) covinfglobal = covinflatemax
@@ -240,6 +244,26 @@ if (smoothparm .gt. zero) then
    if(nproc == 0)then
       do i=1,nc3d
         print *,'min/max ',cvars3d(i),' inflation = ',minval(covinfglobal(:,(i-1)*nlevs+1:i*nlevs)),maxval(covinfglobal(:,(i-1)*nlevs+1:i*nlevs))
+        if (trim(cvars3d(i)) .eq. 'dprs') then 
+            do nn=1,nlevs
+               print *,'min/max dprs inflation level ',nn,' = ',minval(covinfglobal(:,(i-1)*nlevs+nn)),maxval(covinfglobal(:,(i-1)*nlevs+nn))
+            enddo
+        endif
+        if (trim(cvars3d(i)) .eq. 'tv') then 
+            do nn=1,nlevs
+               print *,'min/max tv inflation level ',nn,' = ',minval(covinfglobal(:,(i-1)*nlevs+nn)),maxval(covinfglobal(:,(i-1)*nlevs+nn))
+            enddo
+        endif
+        if (trim(cvars3d(i)) .eq. 'v') then 
+            do nn=1,nlevs
+               print *,'min/max v inflation level ',nn,' = ',minval(covinfglobal(:,(i-1)*nlevs+nn)),maxval(covinfglobal(:,(i-1)*nlevs+nn))
+            enddo
+        endif
+        if (trim(cvars3d(i)) .eq. 'q') then 
+            do nn=1,nlevs
+               print *,'min/max q inflation level ',nn,' = ',minval(covinfglobal(:,(i-1)*nlevs+nn)),maxval(covinfglobal(:,(i-1)*nlevs+nn))
+            enddo
+        endif
       enddo
       do i=1,nc2d
         print *,'min/max ',cvars2d(i),' inflation = ',minval(covinfglobal(:,nc3d*nlevs+i)),maxval(covinfglobal(:,nc3d*nlevs+i))
