@@ -190,8 +190,7 @@ logical,public :: simple_partition = .true.
 logical,public :: reducedgrid = .false.
 logical,public :: univaroz = .true.
 logical,public :: regional = .false.
-logical,public :: use_gfs_nemsio = .false.
-logical,public :: use_gfs_ncio = .false.
+logical,public :: use_gfs_ncio = .true.
 logical,public :: arw = .false.
 logical,public :: nmm = .true.
 logical,public :: nmm_restart = .true.
@@ -235,7 +234,7 @@ logical,public :: write_spread_diag = .false.
 ! ensemble perturbations in observation space.
 logical,public :: lobsdiag_forenkf = .false.
 ! if true, use netcdf diag files, otherwise use binary diags
-logical,public :: netcdf_diag = .false.
+logical,public :: netcdf_diag = .true.
 
 ! use fv3 cubed-sphere tiled restart files
 logical,public :: fv3_native = .false.
@@ -269,7 +268,7 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    covl_minfact,covl_efold,lupd_obspace_serial,letkf_novlocal,&
                    analpertwtnh,analpertwtsh,analpertwttr,sprd_tol,&
                    analpertwtnh_rtpp,analpertwtsh_rtpp,analpertwttr_rtpp,&
-                   nlevs,nanals,saterrfact,univaroz,regional,use_gfs_nemsio,use_gfs_ncio,&
+                   nlevs,nanals,saterrfact,univaroz,regional,use_gfs_ncio,&
                    paoverpb_thresh,latbound,delat,pseudo_rh,numiter,biasvar,&
                    lupd_satbiasc,cliptracers,simple_partition,adp_anglebc,angord,&
                    newpc4pred,nmmb,nhr_anal,nhr_state, fhr_assim,nbackgrounds,nstatefields, &
@@ -632,6 +631,14 @@ if (nproc == 0) then
    !do np=0,ntasks_io-1
    !   print *,'task,nanal1,nanal2',np+1,nanal1(np),nanal2(np)
    !enddo
+   if (.not. use_gfs_ncio) then
+      print *,'only gfs_ncio supported - use_gfs_ncio must be .true.'
+      call stop2(19)
+   end if
+   if (.not. netcdf_diag) then
+      print *,'only netcdf_diag supported - netcdf_diag must be .true.'
+      call stop2(19)
+   end if
    if (trim(datapath) == '') then
       print *,'need to specify datapath in namelist!'
       call stop2(19)
@@ -654,10 +661,6 @@ if (nproc == 0) then
    end if
    if (lupd_satbiasc .and. letkf_flag) then
      print *,'lupd_satbiasc not supported with LETKF'
-     call stop2(19)
-   endif
-   if (use_correlated_oberrs .and. .not. netcdf_diag) then
-     print *,'use_correlated_oberrs only works with netcdf_diag'
      call stop2(19)
    endif
    if (use_correlated_oberrs .and. .not. letkf_novlocal) then
