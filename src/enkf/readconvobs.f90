@@ -533,21 +533,21 @@ subroutine get_convobs_data(obspath, datestring, nobs_max, nobs_maxdiag,   &
                     nprof = nprof + 1
                  endif
                  call init_raggedarr(hxpert, dhx_dx%nnz)
-                 if (obtype == ' ps' .and. dprs_ind > 0) then
-                 call calc_linhx_psfromdelp(hx_mean(nob), state_d(:,:,:,nmem),&
-                                 dhx_dx, hxpert, hx(nob),          &
-                                 ix, delx, ixp, delxp, iy, dely,   &
-                                 iyp, delyp, it, delt, itp, deltp, delp)
-                 ! compute modulated ensemble in obs space using delp
-                 ! perturbation profile.
-                 if (neigv>0) call calc_linhx_modens_psfromdelp(hx_mean(nob),dhx_dx,hxpert,delp,hx_modens(:,nob),vlocal_evecs)
+                 if ((obtype == ' ps' .or. obtype == 'tcp') .and. dprs_ind > 0) then
+                    call calc_linhx_psfromdelp(hx_mean(nob), state_d(:,:,:,nmem),&
+                                    dhx_dx, hxpert, hx(nob),          &
+                                    ix, delx, ixp, delxp, iy, dely,   &
+                                    iyp, delyp, it, delt, itp, deltp, delp)
+                    ! compute modulated ensemble in obs space using delp
+                    ! perturbation profile.
+                    if (neigv>0) call calc_linhx_modens_psfromdelp(hx_mean(nob),dhx_dx,hxpert,delp,hx_modens(:,nob),vlocal_evecs)
                  else
-                 call calc_linhx(hx_mean(nob), state_d(:,:,:,nmem),&
-                                 dhx_dx, hxpert, hx(nob),          &
-                                 ix, delx, ixp, delxp, iy, dely,   &
-                                 iyp, delyp, it, delt, itp, deltp)
-                 ! compute modulated ensemble in obs space
-                 if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
+                    call calc_linhx(hx_mean(nob), state_d(:,:,:,nmem),&
+                                    dhx_dx, hxpert, hx(nob),          &
+                                    ix, delx, ixp, delxp, iy, dely,   &
+                                    iyp, delyp, it, delt, itp, deltp)
+                    ! compute modulated ensemble in obs space
+                    if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
                  endif
 
                  t2 = mpi_wtime()
