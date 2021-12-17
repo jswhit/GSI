@@ -36,8 +36,7 @@ module letkf
 !
 !  The parameter nobsl_max controls
 !  the maximum number of obs that will be assimilated in each local patch.
-!  (the nobsl_max closest are chosen by default, if dfs_sort=T then they
-!   are ranked by decreasing DFS)
+!  (the nobsl_max closest are chosen).
 !  nobsl_max=-1 (default) means all obs used.
 !
 !  Vertical covariance localization can be turned off with letkf_novlocal.
@@ -77,8 +76,8 @@ module letkf
 !   2016-11-29  shlyaeva: Modification for using control vector (control and
 !               state used to be the same) and the "chunks" come from loadbal
 !   2018-05-31  whitaker:  add modulated ensemble model-space vertical
-!               localization (when neigv>0) and ob selection using DFS 
-!               (when dfs_sort=T). Add options for DEnKF and gain form of LETKF.
+!               localization (when neigv>0.
+!               Add options for DEnKF and gain form of LETKF.
 
 !
 ! attributes:
@@ -113,7 +112,7 @@ use params, only: sprd_tol, datapath, nanals, iseed_perturbed_obs,&
                   zhuberleft,zhuberright,varqc,lupd_satbiasc,huber,letkf_novlocal,&
                   lupd_obspace_serial,corrlengthnh,corrlengthtr,corrlengthsh,&
                   getkf,getkf_inflation,denkf,nbackgrounds,nobsl_max,&
-                  neigv,vlocal_evecs,dfs_sort,mincorrlength_fact
+                  neigv,vlocal_evecs,mincorrlength_fact
 use gridinfo, only: nlevs_pres,lonsgrd,latsgrd,logp,npts,gridloc
 use kdtree2_module, only: kdtree2, kdtree2_create, kdtree2_destroy, &
                           kdtree2_result, kdtree2_n_nearest, kdtree2_r_nearest
@@ -141,7 +140,7 @@ real(r_single)  robslocal_mean,robslocal_min,robslocal_max,re, &
                 robslocal_meanall,robslocal_minall,robslocal_maxall,&
                 coslatslocal_meanall, coslatslocal_mean, coslat
 integer(i_kind),allocatable,dimension(:) :: oindex
-real(r_single) :: deglat, dist, corrsq, trpa, trpa_raw, maxdfs
+real(r_single) :: deglat, dist, corrsq, trpa, trpa_raw
 real(r_double) :: t1,t2,t3,t4,t5,tbegin,tend,tmin,tmax,tmean
 real(r_kind) r_nanals,r_nanalsm1
 real(r_kind) normdepart, pnge, width, mincorrlength_factsq
@@ -154,7 +153,7 @@ real(r_kind),allocatable,dimension(:,:) :: hxens
 real(r_single),allocatable,dimension(:,:) :: obens
 real(r_single),allocatable,dimension(:,:,:) :: ens_tmp
 real(r_single),allocatable,dimension(:,:) :: wts_ensperts,pa
-real(r_single),allocatable,dimension(:) :: dfs,wts_ensmean
+real(r_single),allocatable,dimension(:) :: wts_ensmean
 real(r_kind),allocatable,dimension(:) :: rdiag,rloc,robs_local,coslats_local
 real(r_single),allocatable,dimension(:) :: dep
 ! kdtree stuff
@@ -278,8 +277,8 @@ endif
 ! Loop for each horizontal grid points on this task.
 !$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
 !$omp                  nobsl2,ngrd1,corrlength,ens_tmp,coslat, &
-!$omp                  nf,vdist,obens,indxassim,indxob,maxdfs, &
-!$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
+!$omp                  nf,vdist,obens,indxassim,indxob, &
+!$omp                  nn,hxens,wts_ensmean,rdiag,dep,rloc,i, &
 !$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
 !$omp                  wts_ensperts,pa,trpa,trpa_raw) shared(anal_ob, &
 !$omp                  anal_ob_modens,anal_chunk,obsprd_post,obsprd_prior, &
@@ -289,7 +288,7 @@ endif
 !$omp                  getkf,denkf,getkf_inflation,ensmean_chunk,ob,ensmean_ob, &
 !$omp                  nproc,numptsperproc,nnmax,r_nanalsm1,kdtree_obs2,kdobs, &
 !$omp                  mincorrlength_factsq,robs_local,coslats_local, &
-!$omp                  lupd_obspace_serial,eps,dfs_sort,nanals,index_pres,&
+!$omp                  lupd_obspace_serial,eps,nanals,index_pres,&
 !$omp  neigv,nlevs,lonsgrd,latsgrd,nobstot,nens,ncdim,nbackgrounds,indxproc,rad2deg) &
 !$omp  reduction(+:t1,t2,t3,t4,t5) &
 !$omp  reduction(max:nobslocal_max) &
@@ -321,56 +320,13 @@ grdloop: do npt=1,numptsperproc(nproc+1)
    ! kd-tree fixed range search
    !if (allocated(sresults)) deallocate(sresults)
    if (nobsl_max > 0) then ! only use nobsl_max nearest obs (sorted by distance).
-       if (dfs_sort) then ! sort by 1-DFS in ob-space instead of distance.
-          allocate(dfs(nobstot))
-          allocate(rloc(nobstot))
-          allocate(indxob(nobstot))
-          ! calculate integrated 1-DFS for each ob in local volume
-          nobsl = 0
-          maxdfs = -9.9e31
-          do nob=1,nobstot
-             rloc(nob) = sum((obloc(:,nob)-grdloc_chunk(:,npt))**2,1)
-             dist = sqrt(rloc(nob)/corrsq)
-             if (dist < 1.0 - eps .and. &
-                 oberrvaruse(nob) < 1.e10_r_single) then
-                nobsl = nobsl + 1
-                indxob(nobsl) = nob
-                ! use updated ensemble in ob space to compute DFS
-                ! DFS = Tr(R**-1*HPaHT) = dy_a/dy_o see eqn 4 in Liu et al 2009
-                ! https://rmets.onlinelibrary.wiley.com/doi/epdf/10.1002/qj.511
-                dfs(nobsl) = obsprd_post(nob)/oberrvaruse(nob)
-                ! use spread reduction instead.
-                !dfs(nobsl) = obsprd_post(nob)/obsprd_prior(nob)
-                !if (dfs(nobsl) > maxdfs) maxdfs = dfs(nobsl)
-             endif
-          enddo
-          ! sort on max(DFS)-DFS
-          allocate(indxassim(nobsl))
-          dfs = maxdfs-dfs
-          call quicksort(nobsl,dfs(1:nobsl),indxassim)
-          nobsl2 = min(nobsl_max,nobsl)
-          do nob=1,nobsl2
-             sresults(nob)%dis = rloc(indxob(indxassim(nob)))
-             sresults(nob)%idx = indxob(indxassim(nob))
-             !if (nproc == 0 .and. npt == 1) &
-             !print *,nob,sresults(nob)%idx,dfs(indxassim(nob)),sqrt(sresults(nob)%dis/corrlengthsq(sresults(nob)%idx)),obtype(sresults(nob)%idx)
-          enddo
-          deallocate(rloc,dfs,indxassim,indxob)
-          nobsl = nobsl2
+       if (kdobs) then
+          call kdtree2_n_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),nn=nobsl_max,&
+               results=sresults)
+          nobsl = nobsl_max
        else
-          if (kdobs) then
-             call kdtree2_n_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),nn=nobsl_max,&
-                  results=sresults)
-             nobsl = nobsl_max
-          else
-             ! brute force search
-             call find_localobs(grdloc_chunk(:,npt),obloc,corrsq,nobstot,nobsl_max,sresults,nobsl)
-          endif
-          !if (nproc == 0 .and. npt == 1) then
-          !   do nob=1,nobsl
-          !       print *,nob,sresults(nob)%idx,sqrt(sresults(nob)%dis/corrlengthsq(sresults(nob)%idx)),obtype(sresults(nob)%idx)
-          !    enddo
-          !endif
+          ! brute force search
+          call find_localobs(grdloc_chunk(:,npt),obloc,corrsq,nobstot,nobsl_max,sresults,nobsl)
        endif
    else ! find all obs within localization radius (sorted by distance).
        if (kdobs) then

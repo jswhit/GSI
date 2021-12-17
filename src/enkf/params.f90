@@ -28,8 +28,7 @@ module params
 !                          calculate Hx; nhr_anal is for IAU)
 !   2018-05-31  whitaker - added modelspace_vloc (for model-space localization using
 !                          modulated ensembles), nobsl_max (for ob selection
-!                          in LETKF and dfs_sort
-!                          (for using DFS in LETKF ob selection).
+!                          in LETKF)
 !   2018-11-15  groff - Added ancillary parameters
 !                       for EFSOI calculations
 !   2019-03-20  CAPS(C. Tong) - added variables direct reflectivity DA capability
@@ -147,8 +146,6 @@ integer,public :: npefiles = 0
 ! only the first nobsl_max closest obs within the
 ! localization radius will be used.
 ! Ignored if letkf_flag = .false.
-! If dfs_sort=T, DFS is used instead of distance
-! for ob selection.
 integer,public :: nobsl_max = -1
 ! do model-space vertical localization
 ! if .true., eigenvectors of the localization
@@ -212,9 +209,6 @@ logical,public :: l_use_enkf_directZDA = .false.
 logical,public :: massbal_adjust = .false.
 integer(i_kind),public :: nvars = -1
 
-! sort obs in LETKF in order of decreasing DFS
-logical,public :: dfs_sort = .false.
-
 ! if true generate additional input files
 ! required for EFSOI calculations
 logical,public :: efsoi_cycling = .false.
@@ -274,7 +268,7 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    newpc4pred,nmmb,nhr_anal,nhr_state, fhr_assim,nbackgrounds,nstatefields, &
                    save_inflation,nobsl_max,lobsdiag_forenkf,netcdf_diag,forecast_impact,&
                    letkf_flag,massbal_adjust,use_edges,emiss_bc,iseed_perturbed_obs,npefiles,&
-                   getkf,getkf_inflation,denkf,modelspace_vloc,dfs_sort,write_spread_diag,&
+                   getkf,getkf_inflation,denkf,modelspace_vloc,write_spread_diag,&
                    covinflatenh,covinflatesh,covinflatetr,lnsigcovinfcutoff,letkf_bruteforce_search,&
                    efsoi_cycling,efsoi_flag,imp_physics,lupp,cnvw_option,use_correlated_oberrs,&
                    eft,wmoist,adrate,andataname,&
