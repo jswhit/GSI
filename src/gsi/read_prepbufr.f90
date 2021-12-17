@@ -1081,6 +1081,15 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               if (t4dv>winlen.and.t4dv<winlen+zeps) t4dv=winlen
               t4dv=t4dv + time_correction
               time=timeobs + time_correction
+! timeobs: obs time in prepbufr file (relative to bufr date)
+! time_correction:  bufr_date - anal date
+! toff: time offset from beginning of window
+! time:  obs time + time_correction (ob time relative to analysis date, if
+! different than bufr date)
+! t4dv: time relative  to beginning of window.
+! twindin: time window half width from namelist
+! ctwindin: time window half width from convinfo (per ob type)
+!             if (tob) print*,'timeobs,toff,time_correction,time,t4dv,ctwind,twindin=',timeobs,toff,time_correction,time,t4dv,ctwind(nc),twindin
            end if
            if(use_prepb_satwnd .and. (kx >= 240 .and. kx <= 260)) iobsub = hdr(7)
 
