@@ -657,7 +657,6 @@
     ! layer pressure from phillips vertical interolation
     ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
             (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
-
     call copytogrdin(ug,pslg(:,k))
   end do
   if (pseudo_rh) then
