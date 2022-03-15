@@ -123,7 +123,7 @@ real(r_single),public ::  lnsigcutoffnh,lnsigcutofftr,lnsigcutoffsh,&
                lnsigcutoffpsnh,lnsigcutoffpstr,lnsigcutoffpssh
 real(r_single),public ::  corrlengthrdrnh,corrlengthrdrtr,corrlengthrdrsh, &
                lnsigcutoffrdrnh,lnsigcutoffrdrtr,lnsigcutoffrdrsh
-real(r_single),public :: analpertwtnh,analpertwtsh,analpertwttr,sprd_tol,saterrfact
+real(r_single),public :: analpertwtnh,analpertwtsh,analpertwttr,sprd_tol,saterrfact,oberrfact
 real(r_single),public :: analpertwtnh_rtpp,analpertwtsh_rtpp,analpertwttr_rtpp
 real(r_single),public ::  paoverpb_thresh,latbound,delat,p5delat,delatinv
 real(r_single),public ::  latboundpp,latboundpm,latboundmp,latboundmm
@@ -262,7 +262,7 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    covl_minfact,covl_efold,lupd_obspace_serial,letkf_novlocal,&
                    analpertwtnh,analpertwtsh,analpertwttr,sprd_tol,&
                    analpertwtnh_rtpp,analpertwtsh_rtpp,analpertwttr_rtpp,&
-                   nlevs,nanals,saterrfact,univaroz,regional,use_gfs_ncio,&
+                   nlevs,nanals,oberrfact,saterrfact,univaroz,regional,use_gfs_ncio,&
                    paoverpb_thresh,latbound,delat,pseudo_rh,numiter,biasvar,&
                    lupd_satbiasc,cliptracers,simple_partition,adp_anglebc,angord,&
                    newpc4pred,nmmb,nhr_anal,nhr_state, fhr_assim,nbackgrounds,nstatefields, &
@@ -425,6 +425,7 @@ tar_maxlev = 0
 
 ! factor to multiply sat radiance errors.
 saterrfact = 1._r_single
+oberrfact = 1._r_single
 ! number of times to iterate state/bias correction update.
 ! (numiter = 1 means no iteration, but update done in both observation and model
 ! space)

@@ -106,7 +106,7 @@ use kinds, only : r_kind, r_double, i_kind, r_single
 use constants, only: zero, one, deg2rad, rad2deg, rd, cp, pi
 use params, only: & 
       letkf_flag,nobsl_max,datestring,datapath,sprd_tol,nanals,saterrfact, &
-      lnsigcutoffnh, lnsigcutoffsh, lnsigcutofftr, corrlengthnh,&
+      oberrfact,lnsigcutoffnh, lnsigcutoffsh, lnsigcutofftr, corrlengthnh,&
       corrlengthtr, corrlengthsh, obtimelnh, obtimeltr, obtimelsh,&
       lnsigcutoffsatnh, lnsigcutoffsatsh, lnsigcutoffsattr,&
       varqc, huber, zhuberleft, zhuberright, modelspace_vloc, &
@@ -365,6 +365,8 @@ failm=1.e30_r_single
 !call apply_biascorr()
 !==> pre-process obs, obs metadata.
 do nob=1,nobstot
+  oberrvar(nob) = oberrfact*oberrvar(nob) ! applied to all obs
+  ! applied to just sat obs
   if (nob > nobs_conv+nobs_oz) oberrvar(nob) = saterrfact*oberrvar(nob)
   ! empirical adjustment of obs errors for Huber norm from ECMWF RD tech memo
   if (varqc) oberrvar(nob) = oberrvar(nob)*(min(one,0.5_r_single+0.125_r_single*(zhuberleft+zhuberright)))**2
