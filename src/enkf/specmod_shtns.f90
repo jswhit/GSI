@@ -9,6 +9,7 @@
 !    destroy_spec_vars
 !    sptez_s
 !    sptezv_s
+!    getgrad
 
 ! public variable definitions below
 !   def jcap          - spectral (assumed triangular) truncation
@@ -23,15 +24,16 @@
 !   def gaulats       - sin of latitudes on grid.
 !   def gauwts        - gaussian weights (only relevant for idrt=4). 
 !                       if idrt !=. 4, set to cos(sin(gaulats)).
+!   def areameanwts   - grid point weights for global mean
 !   def rerth         - radius of earth used in sptezv_s
 !   def isinitialized - true if module has been initialized by a call to init_spec_vars.
 
       use kinds, only: r_kind, r_double
       implicit none 
       private 
-      public :: init_spec_vars,sptez_s,sptezv_s,destroy_spec_vars
-      public :: gaulats, gauwts, nc, ncd2, asin_gaulats,&
-                isinitialized, imax, jmax, jcap, rerth
+      public :: init_spec_vars,sptez_s,sptezv_s,getgrad,destroy_spec_vars
+      public :: gaulats, gauwts, nc, ncd2, asin_gaulats, areameanwts,&
+                lap, invlap, isinitialized, imax, jmax, jcap, rerth
       INTEGER, PARAMETER :: SHT_NATIVE_LAYOUT=0
       INTEGER, PARAMETER :: SHT_THETA_CONTIGUOUS=256
       INTEGER, PARAMETER :: SHT_PHI_CONTIGUOUS=512
@@ -48,7 +50,7 @@
       INTEGER, PARAMETER :: SHT_REG_POLES=5
       INTEGER, PARAMETER :: SHT_GAUSS_FLY=6
       REAL(r_double), PARAMETER :: SHT_DEFAULT_POLAR_OPT=1.d-10
-      REAL(r_double), parameter :: rerth=6.3712E6
+      REAL(r_double), parameter :: rerth=6.3712E6 ! NCEPLIBS-sp uses this
       REAL(r_double), parameter :: sqrt2=1.41421356237309504880
       INTEGER            :: imax   
       INTEGER            :: jmax   
@@ -59,12 +61,12 @@
       INTEGER            :: idrt
       LOGICAL            :: isinitialized=.false.
       REAL(r_kind), DIMENSION(:), ALLOCATABLE :: gauwts, gaulats, &
-         asin_gaulats
+         asin_gaulats, areameanwts
       REAL(r_double), DIMENSION(:), ALLOCATABLE :: lap, invlap
 
       contains
 
-      subroutine init_spec_vars(nlons,nlats,mtrunc,igrid)
+      subroutine init_spec_vars(nlons,nlats,ntrunc,igrid)
 
 ! initialize library, allocate arrays.
 ! nlons: number of longitude points.
@@ -73,14 +75,14 @@
 ! idir: grid (4=gaussian,0=reg including poles,256=reg not including
 ! poles
 
-      integer, intent(in) :: nlons,nlats,mtrunc
+      integer, intent(in) :: nlons,nlats,ntrunc
       integer, intent(in):: igrid
       real(r_double), dimension(:), allocatable :: gauwts1,gaulats1
-      integer m,n,j,nlm
+      integer m,n,i,j,nlm,nn
 
       call destroy_spec_vars()
-      call shtns_use_threads(1) ! number of openmp threads.
-      call shtns_set_size(mtrunc,mtrunc,1,SHT_FOURPI+SHT_NO_CS_PHASE)
+      call shtns_use_threads(0) ! number of openmp threads.
+      call shtns_set_size(ntrunc,ntrunc,1,SHT_FOURPI+SHT_NO_CS_PHASE)
 
       if (igrid .eq. 4) then ! gaussian grid
          call shtns_precompute(SHT_GAUSS_FLY,SHT_PHI_CONTIGUOUS,SHT_DEFAULT_POLAR_OPT,nlats,nlons)
@@ -93,7 +95,7 @@
          call stop2(-99)
       end if
 
-      idrt = igrid; jmax = nlats; imax = nlons; jcap = mtrunc
+      idrt = igrid; jmax = nlats; imax = nlons; jcap = ntrunc
       ijmax = imax*jmax
 
       call shtns_calc_nlm(nlm,jcap,jcap,1)
@@ -107,6 +109,7 @@
       allocate(gaulats(jmax))
       allocate(asin_gaulats(jmax))
       allocate(gauwts(jmax))
+      allocate(areameanwts(imax*jmax))
 
       allocate(gaulats1(jmax))
       call shtns_cos_array(gaulats1)
@@ -126,21 +129,34 @@
          gauwts = cos(asin(gaulats))
       endif
 
-      allocate(lap(nlm))
-      allocate(invlap(nlm))
-      ! laplacian operator * sqrt2 * rerth
+      nn = 0
+      do j=1,nlats
+      do i=1,nlons
+         nn = nn + 1
+         areameanwts(nn) = gauwts(j)
+      enddo
+      enddo
+      areameanwts = areameanwts/sum(areameanwts)
+
+      allocate(lap(nc))
+      allocate(invlap(nc))
+      ! laplacian operator
       j = 1
       do m=0,jcap
          do n=m,jcap
             lap(j) = real(n)
-            j = j + 1
+            lap(j+1) = real(n)
+            j = j + 2
          enddo
       enddo
-      lap = -sqrt2*lap*(lap+1.0)/rerth
+      !lap = -sqrt2*lap*(lap+1.0)/rerth**2
+      lap = -lap*(lap+1.0)/rerth**2
       invlap = 0
-      invlap(2:) = 1./lap(2:)
+      invlap(3:) = 1./lap(3:)
 
       isinitialized = .true.
+
+      !call shtns_print_cfg()
 
       end subroutine init_spec_vars
 
@@ -215,7 +231,8 @@
             dataspec(nn+1) = imag(dataspec_tmp(nm))
             nn = nn + 2
          enddo
-         dataspec = sqrt2*dataspec
+         dataspec = dataspec
+         !dataspec = sqrt2*dataspec
 
       else if (idir .eq. 1) then ! spec to grid
 
@@ -224,7 +241,7 @@
             dataspec_tmp(nm) = cmplx(dataspec(nn),dataspec(nn+1))
             nn = nn + 2
          enddo
-         dataspec_tmp = dataspec_tmp/sqrt2
+         !dataspec_tmp = dataspec_tmp/sqrt2
          call shtns_sh_to_spat(dataspec_tmp, datagrid_tmp)
          nn = 0
          do j=1,jmax
@@ -260,9 +277,9 @@
 !           the grid field is indexed east to west, then north to south.
 !
 !   input arguments:
-!     vrtspec  - real (2*mx) wave divergence field if idir>0
+!     divpec  - real (2*mx) wave divergence field if idir>0
 !                where mx=(maxwv+1)*(maxwv+2)/2
-!     divspec  - real (2*mx) wave vorticity field if idir>0
+!     vrtspec  - real (2*mx) wave vorticity field if idir>0
 !                where mx=(maxwv+1)*(maxwv+2)/2
 !     ugrid    - real (imax*jmax) grid u-wind (e->w,n->s) if idir<0
 !     vgrid    - real (imax*jmax) grid v-wind (e->w,n->s) if idir<0
@@ -301,7 +318,6 @@
          enddo
          enddo
          call shtns_spat_to_sphtor(ugrid_tmp, vgrid_tmp, vrtspec_tmp, divspec_tmp)
-         vrtspec_tmp = lap*vrtspec_tmp; divspec_tmp = lap*divspec_tmp
          nn = 1
          do nm=1,ncd2
             vrtspec(nn) = real(vrtspec_tmp(nm))
@@ -310,17 +326,18 @@
             divspec(nn+1) = imag(divspec_tmp(nm))
             nn = nn + 2
          enddo
+         vrtspec = lap*rerth*vrtspec; divspec = lap*rerth*divspec
 
       else if (idir .eq. 1) then ! spec to grid
 
          nn = 1
          do nm=1,ncd2
-            vrtspec_tmp(nm) = cmplx(vrtspec(nn),vrtspec(nn+1))
-            divspec_tmp(nm) = cmplx(divspec(nn),divspec(nn+1))
+            vrtspec_tmp(nm) = &
+            invlap(nn)*cmplx(vrtspec(nn),vrtspec(nn+1))/rerth
+            divspec_tmp(nm) = &
+            invlap(nn)*cmplx(divspec(nn),divspec(nn+1))/rerth
             nn = nn + 2
          enddo
-         vrtspec_tmp = invlap*vrtspec_tmp
-         divspec_tmp = invlap*divspec_tmp
          call shtns_sphtor_to_spat(vrtspec_tmp,divspec_tmp,ugrid_tmp,vgrid_tmp)
          nn = 0
          do j=1,jmax
@@ -341,5 +358,15 @@
       deallocate(ugrid_tmp,vgrid_tmp,vrtspec_tmp,divspec_tmp)
 
       end subroutine sptezv_s
+
+      subroutine getgrad(chispec, gradx, grady)
+        real(r_kind), intent(in), dimension(nc) :: chispec
+        real(r_kind), intent(out), dimension(imax*jmax) :: gradx,grady
+        real(r_kind), dimension(nc)  :: vrtspec,divspec
+        ! convert chispec to divspec, vrtspec is zero
+        divspec = lap*chispec
+        vrtspec = 0
+        call sptezv_s(divspec,vrtspec,gradx,grady,1)
+      end subroutine getgrad
 
       end module specmod

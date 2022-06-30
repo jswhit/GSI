@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 if(BUILD_ENKF)
   enable_language (Fortran)
+  set(SHTNS_LIBRARIES "/scratch2/BMC/gsienkf/whitaker/lib/libshtns.a")
   set(Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/include")
   set(CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/include")
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -33,6 +34,7 @@ if(BUILD_ENKF)
   netcdf_io_wrf.f90  params.f90 covlocal.f90 fftpack.f90 genqsat1.f90 mpisetup.f90 rnorm.f90
   sorting.f90 specmod.f90 reducedgrid.f90 readozobs.f90 readsatobs.f90 readconvobs.f90
   write_logfile.f90 kdtree2.f90 mpi_readobs.f90 enkf_obsmod.f90 statevec.f90 controlvec.f90
+  enkf_nlbalmod.f90
   observer_${ENKF_SUFFIX}.f90 gridio_${ENKF_SUFFIX}.f90 gridinfo_${ENKF_SUFFIX}.f90 expand_ens.f90
   ${ENKF_extra_src1} 
   )
@@ -46,6 +48,7 @@ if(BUILD_ENKF)
   quicksort.f90
   radbias.f90
   loadbal.f90
+  enkf_nlbalmod.f90
   smooth_${ENKF_SUFFIX}.f90 
   gridio_${ENKF_SUFFIX}.f90 
   gridinfo_${ENKF_SUFFIX}.f90
@@ -75,7 +78,7 @@ if(BUILD_ENKF)
   target_link_libraries(${ENKFEXEC} enkflib enkfdeplib ${GSILIB} ${GSISHAREDLIB} ${CORE_LIBRARIES}
   ${MPI_Fortran_LIBRARIES} ${LAPACK_LIBRARIES} ${CORE_LIBRARIES} ${CORE_BUILT}
   ${NETCDF_Fortran_LIBRARIES} ${NETCDF_C_LIBRARIES} ${FV3GFS_NCIO_LIBRARIES} 
-  ${EXTRA_LINKER_FLAGS} ${GSI_LDFLAGS} ${NCDIAG_LIBRARIES})
+  ${EXTRA_LINKER_FLAGS} ${GSI_LDFLAGS} ${NCDIAG_LIBRARIES} ${SHTNS_LIBRARIES})
   install(TARGETS ${ENKFEXEC} enkfdeplib enkflib 
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

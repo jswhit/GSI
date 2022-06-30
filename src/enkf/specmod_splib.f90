@@ -33,6 +33,7 @@ module specmod
 !   def je           - integer latitude index (from pole) to end transform
 !   def gaulats      - sin of latitudes on grid.
 !   def gauwts       - gaussian weights.
+!   def areameanwts   - grid point weights for global mean
 !
 ! attributes:
 !   language: f90
@@ -44,12 +45,17 @@ module specmod
   use kinds, only: r_kind,i_kind
   implicit none
 
+  private 
+  public :: init_spec_vars,sptez_s,sptezv_s,destroy_spec_vars,getgrad
+  public :: gaulats, gauwts, nc, ncd2, asin_gaulats,&
+            lap, invlap, isinitialized, imax, jmax, jcap, areameanwts
   integer(i_kind) jcap
   integer(i_kind) idrt,imax,jmax,jn,js,jb,je,ioffset,nc,ncd2,ijmax
   integer(i_kind) :: iromb=0 ! only triangular truncation used
-  real(8),allocatable,dimension(:):: eps,epstop,enn1,elonn1,eon,eontop
+  real(8),allocatable,dimension(:):: eps,epstop,enn1,elonn1,eon,eontop,lap,invlap
   real(8),allocatable,dimension(:):: clat,slat,wlat,glats,gwts
-  real(r_kind), allocatable, dimension(:) :: gaulats,gauwts,asin_gaulats
+  real(r_kind), allocatable, dimension(:) :: &
+   gaulats,gauwts,asin_gaulats,areameanwts
   real(8),allocatable,dimension(:,:):: pln,plntop
   real(8),allocatable,dimension(:):: afft_save
   logical :: isinitialized=.false.
@@ -60,6 +66,7 @@ contains
 
 !   Declare passed variables
     integer(i_kind),intent(in):: nlat,nlon,jcapin,idrtin
+    integer(i_kind) nn,nm,i,j
 
 !   Set constants
     jcap = jcapin
@@ -82,6 +89,8 @@ contains
     allocate( eps(ncd2) )
     allocate( epstop(jcap+1) )
     allocate( enn1(ncd2) )
+    allocate( lap(2*ncd2) )
+    allocate( invlap(2*ncd2) )
     allocate( elonn1(ncd2) )
     allocate( eon(ncd2) )
     allocate( eontop(jcap+1) )
@@ -89,6 +98,7 @@ contains
     allocate( gaulats(jmax) )
     allocate( asin_gaulats(jmax) )
     allocate( gauwts(jmax) )
+    allocate( areameanwts(ijmax) )
     allocate( glats(jmax) )
     allocate( gwts(jmax) )
     allocate( clat(jb:je) )
@@ -102,9 +112,25 @@ contains
        eps,epstop,enn1,elonn1,eon,eontop, &
        afft_save,clat,slat,wlat,pln,plntop)
     call splat(idrt,jmax,glats,gwts)
+    nn = 3; lap = 0; invlap = 0
+    do nm=2,ncd2
+       lap(nn) = -enn1(nm)
+       lap(nn+1) = -enn1(nm)
+       invlap(nn) = -1./enn1(nm)
+       invlap(nn+1) = -1./enn1(nm)
+       nn = nn + 2
+    enddo
     gaulats = glats
     gauwts = gwts
     asin_gaulats=asin(gaulats)
+    nn = 0
+    do j=1,nlat
+    do i=1,nlon
+       nn = nn + 1
+       areameanwts(nn) = gauwts(j)
+    enddo
+    enddo
+    areameanwts = areameanwts/sum(areameanwts)
     
     isinitialized = .true.
 
@@ -593,5 +619,15 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
   endif
 
  end subroutine sptranf_v
+
+ subroutine getgrad(chispec, gradx, grady)
+   real(r_kind), intent(in), dimension(nc) :: chispec
+   real(r_kind), intent(out), dimension(imax*jmax) :: gradx,grady
+   real(r_kind), dimension(nc)  :: vrtspec,divspec
+   ! convert chispec to divspec, vrtspec is zero
+   divspec = lap*chispec
+   vrtspec = 0
+   call sptezv_s(divspec,vrtspec,gradx,grady,1)
+ end subroutine getgrad
 
 end module specmod
