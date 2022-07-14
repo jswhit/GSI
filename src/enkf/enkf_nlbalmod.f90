@@ -35,6 +35,9 @@ module enkf_nlbalmod
  !real(r_kind),allocatable,dimension(:,:) :: pressi,phigbali,Gspec,vrtg,phigbal
 
  integer(i_kind) k,nn,j,i,niter,nlevp
+ logical ::  nobal=.false. ! for debugging
+
+ !nobal = .true.
 
  call init_constants(.false.) ! .false. means global
  call init_constants_derived
@@ -95,6 +98,14 @@ module enkf_nlbalmod
     !if (nmem .eq. 1) print *,k,minval(vrtg(:,k)),maxval(vrtg(:,k)),minval(vg2),maxval(vg2)
  enddo 
 
+! for testing, return zero tvbal, psbal (plus rotational wind)
+ if (nobal) then
+    psgbal= 0.
+    tvgbal = 0.
+    return
+ endif
+    
+
  ! initial guess of balanced state
  psgbal = psg_ref
  tvgbal = tvg_ref
@@ -123,8 +134,8 @@ module enkf_nlbalmod
 
  ! now determine balanced geopot
  do k=1,nlevs+1
-    !pressi(:,k) =  ak(k) + bk(k)*psg
-    pressi(:,k) =  ak(k) + bk(k)*psgbal
+    pressi(:,k) =  ak(k) + bk(k)*psg
+    !pressi(:,k) =  ak(k) + bk(k)*psgbal
     phigbali(:,k) =  ak(k) + bk(k)*psg_ref
  enddo
  if (nmem .eq. 1) print *,'pressi',minval(pressi),maxval(pressi)
