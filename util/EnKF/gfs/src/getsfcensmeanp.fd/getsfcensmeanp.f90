@@ -325,10 +325,13 @@ program getsfcensmeanp
                trim(dset%variables(nvar)%name) == 'vtype' .or. &
                trim(dset%variables(nvar)%name) == 'sltype' .or. &
                trim(dset%variables(nvar)%name) == 'sotyp' .or. &
-               trim(dset%variables(nvar)%name) == 'orog') then
+               trim(dset%variables(nvar)%name) == 'orog' .or. &
+               trim(dset%variables(nvar)%name) == 'time_iso') then
               cycle
            endif
+           print *,'read vardata ',trim(dset%variables(nvar)%name)
            call read_vardata(dset,trim(dset%variables(nvar)%name),values_2d)
+           print *,'values_2d',minval(values_2d),maxval(values_2d),shape(values_2d)
            call mpi_allreduce(values_2d,values_2d_avg,lonb*latb,mpi_real4,mpi_sum,new_comm,iret)
            values_2d_avg = values_2d_avg * rnanals
            if (mype == 0) then
