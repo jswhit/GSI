@@ -1845,14 +1845,14 @@
                             tvbal, psbal, nlons, nlats, nlevs, nanal)
      do k=1,nlevs
         ! analyzed total wind (background wind + bal and unbal increment)
-        ug3(:,nlevs-k+1) = ug3(:,nlevs-k+1) + grdin(:,levels(u_ind-1) + k,nb,ne) +&
-                                              grdin(:,levels(urot_ind-1) + k,nb,ne)
-        vg3(:,nlevs-k+1) = vg3(:,nlevs-k+1) + grdin(:,levels(v_ind-1) + k,nb,ne) +&
-                                              grdin(:,levels(vrot_ind-1) + k,nb,ne)
+        !ug3(:,nlevs-k+1) = ug3(:,nlevs-k+1) + grdin(:,levels(u_ind-1) + k,nb,ne) +&
+        !                                      grdin(:,levels(urot_ind-1) + k,nb,ne)
+        !vg3(:,nlevs-k+1) = vg3(:,nlevs-k+1) + grdin(:,levels(v_ind-1) + k,nb,ne) +&
+        !                                      grdin(:,levels(vrot_ind-1) + k,nb,ne)
         ! analyzed 'balanced' wind
         ! data in grdin oriented bot to topt, ug3 and urot are top to bot
-        !ug3(:,nlevs-k+1) = urot(:,nlevs-k+1) + grdin(:,levels(urot_ind-1) + k,nb,ne)
-        !vg3(:,nlevs-k+1) = vrot(:,nlevs-k+1) + grdin(:,levels(vrot_ind-1) + k,nb,ne)
+        ug3(:,nlevs-k+1) = urot(:,nlevs-k+1) + grdin(:,levels(urot_ind-1) + k,nb,ne)
+        vg3(:,nlevs-k+1) = vrot(:,nlevs-k+1) + grdin(:,levels(vrot_ind-1) + k,nb,ne)
      enddo
      if (nanal .eq. 1) then
         print *,'min.max ug3 3',minval(ug3),maxval(ug3)
