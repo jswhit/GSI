@@ -934,187 +934,187 @@ contains
     deallocate(dset%variables,dset%dimensions)
   end subroutine close_dataset
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4), allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_r4
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4), allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_r4
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4), allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_r4
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4), allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_r4
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4), allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_r4
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8), allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_r8
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8), allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_r8
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8), allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_r8
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8), allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_r8
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8), allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_r8
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer, allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_int
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer, allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_int
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer, allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_int
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer, allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_int
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer, allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_int
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2), allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_short
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2), allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_short
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2), allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_short
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2), allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_short
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2), allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_short
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1), allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_byte
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1), allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_byte
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1), allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_byte
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1), allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_byte
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1), allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_byte
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_1d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character, allocatable, dimension(:), intent(inout) :: values
     include "read_vardata_code_1d.f90"
   end subroutine read_vardata_1d_char
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_2d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character, allocatable, dimension(:,:), intent(inout) :: values
     include "read_vardata_code_2d.f90"
   end subroutine read_vardata_2d_char
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_3d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character, allocatable, dimension(:,:,:), intent(inout) :: values
     include "read_vardata_code_3d.f90"
   end subroutine read_vardata_3d_char
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_4d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character, allocatable, dimension(:,:,:,:), intent(inout) :: values
     include "read_vardata_code_4d.f90"
   end subroutine read_vardata_4d_char
 
-  !> @copydoc module_ncio::read_vardata
+  !> @copydoc module_fv3gfs_ncio::read_vardata
   subroutine read_vardata_5d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character, allocatable, dimension(:,:,:,:,:), intent(inout) :: values
     include "read_vardata_code_5d.f90"
   end subroutine read_vardata_5d_char
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4),  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1122,7 +1122,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_r4
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4),  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1130,7 +1130,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_r4
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4),  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1138,7 +1138,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_r4
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4),  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1146,7 +1146,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_r4
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_r4(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(4),  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1154,7 +1154,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_r4
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8),  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1162,7 +1162,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_r8
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8),  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1170,7 +1170,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_r8
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8),  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1178,7 +1178,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_r8
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8),  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1186,7 +1186,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_r8
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_r8(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     real(8),  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1194,7 +1194,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_r8
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer,  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1202,7 +1202,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_int
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer,  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1210,7 +1210,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_int
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer,  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1218,7 +1218,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_int
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer,  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1226,7 +1226,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_int
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_int(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer,  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1234,7 +1234,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_int
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2),  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1242,7 +1242,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_short
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2),  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1250,7 +1250,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_short
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2),  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1258,7 +1258,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_short
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2),  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1266,7 +1266,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_short
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_short(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(2),  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1274,7 +1274,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_short
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1),  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1282,7 +1282,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_byte
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1),  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1290,7 +1290,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_byte
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1),  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1298,7 +1298,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_byte
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1),  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1306,7 +1306,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_byte
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_byte(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     integer(1),  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1314,7 +1314,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_byte
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_1d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character,  dimension(:), intent(in) :: values
     integer, intent(in), optional :: ncstart(1)
@@ -1322,7 +1322,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_1d_char
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_2d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character,  dimension(:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(2)
@@ -1330,7 +1330,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_2d_char
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_3d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character,  dimension(:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(3)
@@ -1338,7 +1338,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_3d_char
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_4d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character,  dimension(:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(4)
@@ -1346,7 +1346,7 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_4d_char
 
-  !> @copydoc module_ncio::write_vardata
+  !> @copydoc module_fv3gfs_ncio::write_vardata
   subroutine write_vardata_5d_char(dset, varname, values, nslice, slicedim, ncstart, nccount, errcode)
     character,  dimension(:,:,:,:,:), intent(in) :: values
     integer, intent(in), optional :: ncstart(5)
@@ -1354,133 +1354,133 @@ contains
     include "write_vardata_code.f90"
   end subroutine write_vardata_5d_char
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_int_scalar(dset, attname, values, varname, errcode)
     integer, intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_int_scalar
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_short_scalar(dset, attname, values, varname, errcode)
     integer(2), intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_short_scalar
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_byte_scalar(dset, attname, values, varname, errcode)
     integer(1), intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_byte_scalar
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_r4_scalar(dset, attname, values, varname, errcode)
     real(4), intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_r4_scalar
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_r8_scalar(dset, attname, values, varname, errcode)
     real(8), intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_r8_scalar
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_r4_1d(dset, attname, values, varname, errcode)
     real(4), intent(inout), allocatable, dimension(:) :: values
     include "read_attribute_code.f90"
   end subroutine read_attribute_r4_1d
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_r8_1d(dset, attname, values, varname, errcode)
     real(8), intent(inout), allocatable, dimension(:) :: values
     include "read_attribute_code.f90"
   end subroutine read_attribute_r8_1d
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_int_1d(dset, attname, values, varname, errcode)
     integer, intent(inout), allocatable, dimension(:) :: values
     include "read_attribute_code.f90"
   end subroutine read_attribute_int_1d
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_short_1d(dset, attname, values, varname, errcode)
     integer(2), intent(inout), allocatable, dimension(:) :: values
     include "read_attribute_code.f90"
   end subroutine read_attribute_short_1d
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_byte_1d(dset, attname, values, varname, errcode)
     integer(1), intent(inout), allocatable, dimension(:) :: values
     include "read_attribute_code.f90"
   end subroutine read_attribute_byte_1d
 
-  !> @copydoc module_ncio::read_attribute
+  !> @copydoc module_fv3gfs_ncio::read_attribute
   subroutine read_attribute_char(dset, attname, values, varname, errcode)
     character(len=*), intent(inout) :: values
     include "read_scalar_attribute_code.f90"
   end subroutine read_attribute_char
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_int_scalar(dset, attname, values, varname, errcode)
     integer, intent(in) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_int_scalar
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_short_scalar(dset, attname, values, varname, errcode)
     integer(2), intent(in) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_short_scalar
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_byte_scalar(dset, attname, values, varname, errcode)
     integer(1), intent(in) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_byte_scalar
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_r4_scalar(dset, attname, values, varname, errcode)
     real(4), intent(in) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_r4_scalar
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_r8_scalar(dset, attname, values, varname, errcode)
     real(8), intent(in) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_r8_scalar
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_r4_1d(dset, attname, values, varname, errcode)
     real(4), intent(in), allocatable, dimension(:) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_r4_1d
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_r8_1d(dset, attname, values, varname, errcode)
     real(8), intent(in), allocatable, dimension(:) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_r8_1d
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_int_1d(dset, attname, values, varname, errcode)
     integer, intent(in), allocatable, dimension(:) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_int_1d
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_short_1d(dset, attname, values, varname, errcode)
     integer(2), intent(in), allocatable, dimension(:) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_short_1d
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_byte_1d(dset, attname, values, varname, errcode)
     integer(1), intent(in), allocatable, dimension(:) :: values
     include "write_attribute_code.f90"
   end subroutine write_attribute_byte_1d
 
-  !> @copydoc module_ncio::write_attribute
+  !> @copydoc module_fv3gfs_ncio::write_attribute
   subroutine write_attribute_char(dset, attname, values, varname, errcode)
     character(len=*), intent(in) :: values
     include "write_attribute_code.f90"
@@ -1543,28 +1543,28 @@ contains
     time_units = trim(adjustl(timechar))//time_units
   end function get_time_units_from_idate
 
-  !> @copydoc module_ncio::quantize_data
+  !> @copydoc module_fv3gfs_ncio::quantize_data
   subroutine quantize_data_2d(dataIn, dataOut, nbits, compress_err)
     real(4), intent(in) :: dataIn(:,:)
     real(4), intent(out) :: dataOut(:,:)
     include "quantize_data_code.f90"
   end subroutine quantize_data_2d
 
-  !> @copydoc module_ncio::quantize_data
+  !> @copydoc module_fv3gfs_ncio::quantize_data
   subroutine quantize_data_3d(dataIn, dataOut, nbits, compress_err)
     real(4), intent(in) :: dataIn(:,:,:)
     real(4), intent(out) :: dataOut(:,:,:)
     include "quantize_data_code.f90"
   end subroutine quantize_data_3d
 
-  !> @copydoc module_ncio::quantize_data
+  !> @copydoc module_fv3gfs_ncio::quantize_data
   subroutine quantize_data_4d(dataIn, dataOut, nbits, compress_err)
     real(4), intent(in) :: dataIn(:,:,:,:)
     real(4), intent(out) :: dataOut(:,:,:,:)
     include "quantize_data_code.f90"
   end subroutine quantize_data_4d
 
-  !> @copydoc module_ncio::quantize_data
+  !> @copydoc module_fv3gfs_ncio::quantize_data
   subroutine quantize_data_5d(dataIn, dataOut, nbits, compress_err)
     real(4), intent(in) :: dataIn(:,:,:,:,:)
     real(4), intent(out) :: dataOut(:,:,:,:,:)
