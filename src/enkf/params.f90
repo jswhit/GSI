@@ -33,6 +33,7 @@ module params
 !   2018-11-15  groff - Added ancillary parameters
 !                       for EFSOI calculations
 !   2019-03-20  CAPS(C. Tong) - added variables direct reflectivity DA capability
+!   2023-02-01  whitaker - remove dfs_sort, add obs_selection
 !
 ! attributes:
 !   language: f95
@@ -147,8 +148,6 @@ integer,public :: npefiles = 0
 ! only the first nobsl_max closest obs within the
 ! localization radius will be used.
 ! Ignored if letkf_flag = .false.
-! If dfs_sort=T, DFS is used instead of distance
-! for ob selection.
 integer,public :: nobsl_max = -1
 ! do model-space vertical localization
 ! if .true., eigenvectors of the localization
@@ -213,8 +212,8 @@ logical,public :: l_use_enkf_directZDA = .false.
 logical,public :: massbal_adjust = .false.
 integer(i_kind),public :: nvars = -1
 
-! sort obs in LETKF in order of decreasing DFS
-logical,public :: dfs_sort = .false.
+! how to select nobsl_max closest obs
+character(len=12),public :: obs_selection = 'closest'
 
 ! if true generate additional input files
 ! required for EFSOI calculations
@@ -277,11 +276,11 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    newpc4pred,nmmb,nhr_anal,nhr_state, fhr_assim,nbackgrounds,nstatefields, &
                    save_inflation,nobsl_max,lobsdiag_forenkf,netcdf_diag,forecast_impact,&
                    letkf_flag,massbal_adjust,use_edges,emiss_bc,iseed_perturbed_obs,npefiles,&
-                   getkf,getkf_inflation,denkf,modelspace_vloc,dfs_sort,write_spread_diag,&
+                   getkf,getkf_inflation,denkf,modelspace_vloc,write_spread_diag,&
                    covinflatenh,covinflatesh,covinflatetr,lnsigcovinfcutoff,letkf_bruteforce_search,&
                    efsoi_cycling,efsoi_flag,imp_physics,lupp,cnvw_option,use_correlated_oberrs,&
                    eft,wmoist,adrate,andataname,&
-                   gdatehr,datehr,&
+                   obs_selection,gdatehr,datehr,&
                    tar_minlat,tar_maxlat,tar_minlon,tar_maxlon,tar_minlev,tar_maxlev,&
                    fv3_native, paranc, nccompress, write_fv3_incr,incvars_to_zero,write_ensmean, &
                    corrlengthrdrnh,corrlengthrdrsh,corrlengthrdrtr,&
@@ -699,6 +698,11 @@ if (nproc == 0) then
    if (nvars > 0 .or. massbal_adjust) then
       print *,'WARNING: nvars and massbal_adjust are no longer used!'
       print *,'They are inferred from the anavinfo file instead.'
+   endif
+
+   if (trim(obs_selection) .ne. 'nearest' .and. trim(obs_selection) .ne. 'random') then
+      print *,'illegal specfication of obs_selection in namelist'
+      call stop2(19)
    endif
 
 end if

@@ -36,8 +36,6 @@ module letkf
 !
 !  The parameter nobsl_max controls
 !  the maximum number of obs that will be assimilated in each local patch.
-!  (the nobsl_max closest are chosen by default, if dfs_sort=T then they
-!   are ranked by decreasing DFS)
 !  nobsl_max=-1 (default) means all obs used.
 !
 !  Vertical covariance localization can be turned off with letkf_novlocal.
@@ -79,6 +77,7 @@ module letkf
 !   2018-05-31  whitaker:  add modulated ensemble model-space vertical
 !               localization (when neigv>0) and ob selection using DFS 
 !               (when dfs_sort=T). Add options for DEnKF and gain form of LETKF.
+!   2023-02-01  whitaker: remove dfs_sort, add obs_selection parameter.
 
 !
 ! attributes:
@@ -113,11 +112,12 @@ use params, only: sprd_tol, datapath, nanals, iseed_perturbed_obs,&
                   zhuberleft,zhuberright,varqc,lupd_satbiasc,huber,letkf_novlocal,&
                   lupd_obspace_serial,corrlengthnh,corrlengthtr,corrlengthsh,&
                   getkf,getkf_inflation,denkf,nbackgrounds,nobsl_max,&
-                  neigv,vlocal_evecs,dfs_sort,mincorrlength_fact
+                  neigv,vlocal_evecs,mincorrlength_fact,obs_selection
 use gridinfo, only: nlevs_pres,lonsgrd,latsgrd,logp,npts,gridloc
 use kdtree2_module, only: kdtree2, kdtree2_create, kdtree2_destroy, &
                           kdtree2_result, kdtree2_n_nearest, kdtree2_r_nearest
 use sorting, only: quicksort
+use random_normal, only : rnorm, set_random_seed
 use radbias, only: apply_biascorr
 
 implicit none
@@ -133,7 +133,7 @@ implicit none
 
 ! local variables.
 integer(i_kind) nob,nf,nanal,nens,&
-                i,nlev,nrej,npt,nn,nnmax,ierr
+                i,nlev,nrej,npt,nn,nnmax,ierr,iseed_obs_selection
 integer(i_kind) nobsl, ngrd1, nobsl2, nthreads, nb, &
                 nobslocal_mean,nobslocal_min,nobslocal_max, &
                 nobslocal_meanall,nobslocal_minall,nobslocal_maxall
@@ -156,9 +156,9 @@ real(r_single),allocatable,dimension(:,:,:) :: ens_tmp
 real(r_single),allocatable,dimension(:,:) :: wts_ensperts,pa
 real(r_single),allocatable,dimension(:) :: dfs,wts_ensmean
 real(r_kind),allocatable,dimension(:) :: rdiag,rloc,robs_local,coslats_local
-real(r_single),allocatable,dimension(:) :: dep
+real(r_single),allocatable,dimension(:) :: dep,rannum
 ! kdtree stuff
-type(kdtree2_result),dimension(:),allocatable :: sresults
+type(kdtree2_result),dimension(:),allocatable :: sresults, sresults2
 integer(i_kind), dimension(:), allocatable :: indxassim, indxob
 real(r_kind) eps
 
@@ -273,23 +273,29 @@ if (nobsl_max > 0) then
   allocate(coslats_local(npts_max))
   coslats_local = 0
 endif
+! set random seed if random number generator is to be used.
+iseed_obs_selection = 0 ! TODO - seed needs to be in namelist for reproducibility
+if (nobsl_max > 0 .and. trim(obs_selection) == 'random') then
+   ! random seed for random obs selection (same seed on all tasks)
+   call set_random_seed(iseed_obs_selection, nproc)
+endif
 
 ! Update ensemble on model grid.
 ! Loop for each horizontal grid points on this task.
 !$omp parallel do schedule(dynamic) default(none) private(npt,nob,nobsl, &
 !$omp                  nobsl2,ngrd1,corrlength,ens_tmp,coslat, &
-!$omp                  nf,vdist,obens,indxassim,indxob,maxdfs, &
+!$omp                  nf,vdist,obens,rannum,indxassim,indxob,maxdfs, &
 !$omp                  nn,hxens,wts_ensmean,dfs,rdiag,dep,rloc,i, &
-!$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults, &
+!$omp                  oindex,deglat,dist,corrsq,nb,nlev,nanal,sresults,sresults2, &
 !$omp                  wts_ensperts,pa,trpa,trpa_raw) shared(anal_ob, &
 !$omp                  anal_ob_modens,anal_chunk,obsprd_post,obsprd_prior, &
-!$omp                  oberrvar,oberrvaruse,nobsl_max,grdloc_chunk, &
+!$omp                  oberrvar,oberrvaruse,obs_selection,nobsl_max,grdloc_chunk, &
 !$omp                  obloc,corrlengthnh,corrlengthsh,corrlengthtr,&
 !$omp                  vlocal_evecs,vlocal,oblnp,lnp_chunk,lnsigl,corrlengthsq,&
 !$omp                  getkf,denkf,getkf_inflation,ensmean_chunk,ob,ensmean_ob, &
 !$omp                  nproc,numptsperproc,nnmax,r_nanalsm1,kdtree_obs2,kdobs, &
 !$omp                  mincorrlength_factsq,robs_local,coslats_local, &
-!$omp                  lupd_obspace_serial,eps,dfs_sort,nanals,index_pres,&
+!$omp                  lupd_obspace_serial,eps,nanals,index_pres,&
 !$omp  neigv,nlevs,lonsgrd,latsgrd,nobstot,nens,ncdim,nbackgrounds,indxproc,rad2deg) &
 !$omp  reduction(+:t1,t2,t3,t4,t5) &
 !$omp  reduction(max:nobslocal_max) &
@@ -320,44 +326,8 @@ grdloop: do npt=1,numptsperproc(nproc+1)
    enddo
    ! kd-tree fixed range search
    !if (allocated(sresults)) deallocate(sresults)
-   if (nobsl_max > 0) then ! only use nobsl_max nearest obs (sorted by distance).
-       if (dfs_sort) then ! sort by 1-DFS in ob-space instead of distance.
-          allocate(dfs(nobstot))
-          allocate(rloc(nobstot))
-          allocate(indxob(nobstot))
-          ! calculate integrated 1-DFS for each ob in local volume
-          nobsl = 0
-          maxdfs = -9.9e31
-          do nob=1,nobstot
-             rloc(nob) = sum((obloc(:,nob)-grdloc_chunk(:,npt))**2,1)
-             dist = sqrt(rloc(nob)/corrsq)
-             if (dist < 1.0 - eps .and. &
-                 oberrvaruse(nob) < 1.e10_r_single) then
-                nobsl = nobsl + 1
-                indxob(nobsl) = nob
-                ! use updated ensemble in ob space to compute DFS
-                ! DFS = Tr(R**-1*HPaHT) = dy_a/dy_o see eqn 4 in Liu et al 2009
-                ! https://rmets.onlinelibrary.wiley.com/doi/epdf/10.1002/qj.511
-                dfs(nobsl) = obsprd_post(nob)/oberrvaruse(nob)
-                ! use spread reduction instead.
-                !dfs(nobsl) = obsprd_post(nob)/obsprd_prior(nob)
-                !if (dfs(nobsl) > maxdfs) maxdfs = dfs(nobsl)
-             endif
-          enddo
-          ! sort on max(DFS)-DFS
-          allocate(indxassim(nobsl))
-          dfs = maxdfs-dfs
-          call quicksort(nobsl,dfs(1:nobsl),indxassim)
-          nobsl2 = min(nobsl_max,nobsl)
-          do nob=1,nobsl2
-             sresults(nob)%dis = rloc(indxob(indxassim(nob)))
-             sresults(nob)%idx = indxob(indxassim(nob))
-             !if (nproc == 0 .and. npt == 1) &
-             !print *,nob,sresults(nob)%idx,dfs(indxassim(nob)),sqrt(sresults(nob)%dis/corrlengthsq(sresults(nob)%idx)),obtype(sresults(nob)%idx)
-          enddo
-          deallocate(rloc,dfs,indxassim,indxob)
-          nobsl = nobsl2
-       else
+   if (nobsl_max > 0) then
+       if (trim(obs_selection) == 'nearest') then ! only use nobsl_max nearest obs (sorted by distance).
           if (kdobs) then
              call kdtree2_n_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),nn=nobsl_max,&
                   results=sresults)
@@ -371,6 +341,33 @@ grdloop: do npt=1,numptsperproc(nproc+1)
           !       print *,nob,sresults(nob)%idx,sqrt(sresults(nob)%dis/corrlengthsq(sresults(nob)%idx)),obtype(sresults(nob)%idx)
           !    enddo
           !endif
+       else if (trim(obs_selection) == 'random') then
+          if (kdobs) then
+             call kdtree2_r_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),r2=corrsq,&
+                  nfound=nobsl,nalloc=nobstot,results=sresults)
+          else
+             ! brute force search
+             call find_localobs(grdloc_chunk(:,npt),obloc,corrsq,nobstot,-1,sresults,nobsl)
+          endif
+          if (nobsl > nobsl_max) then
+             ! randomly sample nobsl_max obs from obs in local volume
+             allocate(rannum(nobsl))
+             allocate(indxassim(nobsl))
+             call random_number(rannum)
+             call quicksort(nobsl,rannum,indxassim)
+             deallocate(rannum)
+             allocate(sresults2(nobsl_max))
+             do nob=1,nobsl_max
+                 sresults2(nob)%idx = sresults(indxassim(nob))%idx
+                 sresults2(nob)%dis = sresults(indxassim(nob))%dis
+             enddo
+             do nob=1,nobsl_max
+                 sresults(nob)%idx = sresults2(nob)%idx
+                 sresults(nob)%dis = sresults2(nob)%dis
+             enddo
+             deallocate(sresults2, indxassim)
+             nobsl = nobsl_max
+          endif
        endif
    else ! find all obs within localization radius (sorted by distance).
        if (kdobs) then
