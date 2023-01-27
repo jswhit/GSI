@@ -133,7 +133,7 @@ implicit none
 
 ! local variables.
 integer(i_kind) nob,nf,nanal,nens,&
-                i,nlev,nrej,npt,nn,nnmax,ierr,iseed_obs_selection
+                i,nlev,nrej,npt,nn,nnmax,ierr
 integer(i_kind) nobsl, ngrd1, nobsl2, nthreads, nb, &
                 nobslocal_mean,nobslocal_min,nobslocal_max, &
                 nobslocal_meanall,nobslocal_minall,nobslocal_maxall
@@ -274,10 +274,9 @@ if (nobsl_max > 0) then
   coslats_local = 0
 endif
 ! set random seed if random number generator is to be used.
-iseed_obs_selection = 0 ! TODO - seed needs to be in namelist for reproducibility
 if (nobsl_max > 0 .and. trim(obs_selection) == 'random') then
    ! random seed for random obs selection (same seed on all tasks)
-   call set_random_seed(iseed_obs_selection, nproc)
+   call set_random_seed(iseed_perturbed_obs, nproc)
 endif
 
 ! Update ensemble on model grid.
