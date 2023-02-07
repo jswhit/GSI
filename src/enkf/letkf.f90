@@ -275,7 +275,7 @@ if (nobsl_max > 0) then
 endif
 ! set random seed if random number generator is to be used.
 if (nobsl_max > 0 .and. trim(obs_selection) == 'random') then
-   ! random seed for random obs selection (same seed on all tasks)
+   ! random seed for random obs selection
    call set_random_seed(iseed_perturbed_obs, nproc)
 endif
 
@@ -335,12 +335,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
              ! brute force search
              call find_localobs(grdloc_chunk(:,npt),obloc,corrsq,nobstot,nobsl_max,sresults,nobsl)
           endif
-          !if (nproc == 0 .and. npt == 1) then
-          !   do nob=1,nobsl
-          !       print *,nob,sresults(nob)%idx,sqrt(sresults(nob)%dis/corrlengthsq(sresults(nob)%idx)),obtype(sresults(nob)%idx)
-          !    enddo
-          !endif
-       else if (trim(obs_selection) == 'random') then
+       else if (trim(obs_selection) == 'random') then ! use randomly selected nobsl_max obs
           if (kdobs) then
              call kdtree2_r_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),r2=corrsq,&
                   nfound=nobsl,nalloc=nobstot,results=sresults)
@@ -368,7 +363,7 @@ grdloop: do npt=1,numptsperproc(nproc+1)
              nobsl = nobsl_max
           endif
        endif
-   else ! find all obs within localization radius (sorted by distance).
+   else ! use all obs within localization radius (sorted by distance).
        if (kdobs) then
          call kdtree2_r_nearest(tp=kdtree_obs2,qv=grdloc_chunk(:,npt),r2=corrsq,&
               nfound=nobsl,nalloc=nobstot,results=sresults)
