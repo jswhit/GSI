@@ -213,7 +213,7 @@ logical,public :: massbal_adjust = .false.
 integer(i_kind),public :: nvars = -1
 
 ! how to select nobsl_max closest obs
-character(len=12),public :: obs_selection = 'closest'
+character(len=12),public :: obs_selection = 'nearest'
 
 ! if true generate additional input files
 ! required for EFSOI calculations
