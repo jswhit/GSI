@@ -123,7 +123,7 @@ subroutine setupozlay(obsLL,odiagLL,lunin,mype,stats_oz,nlevs,nreal,nobs,&
   use m_obsdiagNode, only : obsdiagNode_assert
 
   use obsmod, only : dplat,nobskeep
-  use obsmod, only : mype_diaghdr,dirname,time_offset,ianldate
+  use obsmod, only : mype_diaghdr,dirname,time_offset,ianldate,oberrfact
   use obsmod, only : lobsdiag_allocated,lobsdiagsave,lobsdiag_forenkf
   use m_obsNode, only: obsNode
   use m_ozNode, only : ozNode
@@ -538,7 +538,7 @@ subroutine setupozlay(obsLL,odiagLL,lunin,mype,stats_oz,nlevs,nreal,nobs,&
            if (ozone_diagsave .and. luse(i)) then
               rdiagbuf(1,k,ii) = ozobs(k)
               rdiagbuf(2,k,ii) = ozone_inv(k)           ! obs-ges
-              errorinv = sqrt(varinv4diag(k)*rat_err4diag)
+              errorinv = sqrt(varinv4diag(k)*rat_err4diag/oberrfact)
               rdiagbuf(3,k,ii) = errorinv               ! inverse observation error
               if (obstype == 'gome' .or. obstype == 'omieff'  .or. &
                   obstype == 'omi'  .or. obstype == 'tomseff' .or. &
@@ -727,7 +727,7 @@ subroutine setupozlay(obsLL,odiagLL,lunin,mype,stats_oz,nlevs,nreal,nobs,&
 
                  my_head%ipos(k)    = ipos(k)
                  my_head%res(k)     = ozone_inv(k)
-                 my_head%err2(k)    = varinv3(k)
+                 my_head%err2(k)    = varinv3(k)/oberrfact
                  my_head%raterr2(k) = ratio_errors(k)**2
                  my_head%apriori(1:nloz_omi) = apriori(1:nloz_omi)
                  my_head%efficiency(1:nloz_omi) = efficiency(1:nloz_omi)
@@ -1444,7 +1444,7 @@ subroutine setupozlev(obsLL,odiagLL,lunin,mype,stats_oz,nlevs,nreal,nobs,&
         end do
 
         my_head%res        = ozone_inv
-        my_head%err2       = varinv3
+        my_head%err2       = varinv3/oberrfact
         my_head%raterr2    = ratio_errors**2
         my_head%luse       = luse(i)
         my_head%time       = dtime
