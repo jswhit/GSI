@@ -1035,7 +1035,7 @@ subroutine setupozlev(obsLL,odiagLL,lunin,mype,stats_oz,nlevs,nreal,nobs,&
   use obsmod, only : dplat,nobskeep
   use obsmod, only : mype_diaghdr,dirname,time_offset,ianldate
   use obsmod, only : lobsdiag_allocated,lobsdiagsave,lobsdiag_forenkf
-  use obsmod, only: netcdf_diag, binary_diag, dirname
+  use obsmod, only: netcdf_diag, binary_diag, dirname, oberrfact
   use nc_diag_write_mod, only: nc_diag_init, nc_diag_header, nc_diag_metadata, &
        nc_diag_write, nc_diag_data2d
   use nc_diag_read_mod, only: nc_diag_read_init, nc_diag_read_get_dim, nc_diag_read_close
