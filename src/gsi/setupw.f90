@@ -30,7 +30,7 @@ subroutine setupw(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   use m_obsdiagNode, only: obsdiagNode_assert
 
   use obsmod, only: rmiss_single,perturb_obs,oberror_tune,lobsdiag_forenkf,&
-       lobsdiagsave,nobskeep,lobsdiag_allocated,&
+       oberrfact,lobsdiagsave,nobskeep,lobsdiag_allocated,&
        time_offset,bmiss,ianldate,aircraft_recon
   use m_obsNode, only: obsNode
   use m_wNode, only: wNode
@@ -1324,7 +1324,7 @@ subroutine setupw(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
 
         my_head%ures=dudiff
         my_head%vres=dvdiff
-        my_head%err2=error**2
+        my_head%err2=oberrfact*error**2
         my_head%raterr2=ratio_errors **2  
         my_head%time = dtime
         my_head%b=cvar_b(ikx)
@@ -1376,10 +1376,10 @@ subroutine setupw(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
      if (conv_diagsave .and. luse(i)) then
         ii=ii+1
         rstation_id     = data(id,i)
-        err_input = data(ier2,i)
-        err_adjst = data(ier,i)
+        err_input = sqrt(oberrfact)*data(ier2,i)
+        err_adjst = sqrt(oberrfact)*data(ier,i)
         if (ratio_errors*error>tiny_r_kind) then
-           err_final = one/(ratio_errors*error)
+           err_final = sqrt(oberrfact)/(ratio_errors*error)
         else
            err_final = huge_single
         endif
@@ -1449,7 +1449,7 @@ subroutine setupw(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
 
            my_head%ures=dudiff
            my_head%vres=dvdiff
-           my_head%err2=error**2
+           my_head%err2=oberrfact*error**2
            my_head%raterr2=ratio_errors **2
            my_head%time = dtime
            my_head%b=cvar_b(ikx)

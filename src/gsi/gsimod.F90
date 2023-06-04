@@ -23,7 +23,7 @@
   use gsi_dbzOper, only: diag_radardbz
 
   use obsmod, only: doradaroneob,oneoblat,oneoblon,oneobheight,oneobvalue,oneobddiff,oneobradid,&
-     radar_no_thinning,ens_hx_dbz_cut,static_gsi_nopcp_dbz,rmesh_dbz,&
+     radar_no_thinning,ens_hx_dbz_cut,static_gsi_nopcp_dbz,rmesh_dbz,oberrfact,&
      rmesh_vr,zmesh_dbz,zmesh_vr,if_vterminal, if_model_dbz,if_vrobs_raw,&
      minobrangedbz,maxobrangedbz,maxobrangevr,maxtiltvr,missing_to_nopcp,&
      ntilt_radarfiles,whichradar,&
@@ -761,7 +761,7 @@
        use_sp_eqspace,lnested_loops,lsingleradob,thin4d,use_readin_anl_sfcmask,&
        luse_obsdiag,id_drifter,id_ship,verbose,print_obs_para,lsingleradar,singleradar,lnobalance, &
        missing_to_nopcp,minobrangedbz,minobrangedbz,maxobrangedbz,&
-       maxobrangevr,maxtiltvr,whichradar,doradaroneob,oneoblat,&
+       maxobrangevr,maxtiltvr,whichradar,doradaroneob,oneoblat,oberrfact,&
        oneoblon,oneobheight,oneobvalue,oneobddiff,oneobradid,&
        rmesh_vr,zmesh_dbz,zmesh_vr, ntilt_radarfiles, whichradar,&
        radar_no_thinning,ens_hx_dbz_cut,static_gsi_nopcp_dbz,rmesh_dbz,&

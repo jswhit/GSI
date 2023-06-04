@@ -55,7 +55,7 @@ subroutine setuptcp(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diags
   use obsmod, only:  &
              nobskeep,lobsdiag_allocated,oberror_tune,perturb_obs,tcp_posmatch,tcp_box, &
              time_offset,rmiss_single,lobsdiagsave,lobsdiag_forenkf,ianldate
-  use obsmod, only: netcdf_diag, binary_diag, dirname
+  use obsmod, only: netcdf_diag, binary_diag, dirname, oberrfact
   use nc_diag_write_mod, only: nc_diag_init, nc_diag_header, nc_diag_metadata, &
        nc_diag_write, nc_diag_data2d
   use nc_diag_read_mod, only: nc_diag_read_init, nc_diag_read_get_dim, nc_diag_read_close
@@ -439,7 +439,7 @@ subroutine setuptcp(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diags
         call get_ij(mm1,dlat,dlon,my_head%ij,my_head%wij)
 
         my_head%res      = ddiff
-        my_head%err2     = error**2
+        my_head%err2     = oberrfact*error**2
         my_head%raterr2  = ratio_errors**2
         my_head%time     = dtime      
         my_head%b        = cvar_b(ikx)
@@ -466,10 +466,10 @@ subroutine setuptcp(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diags
         pob      = pob*r10
         pges     = pges*r10
         pgesorig = pgesorig*r10
-        err_input = data(ier,i)*r10   ! r10 converts cb to mb
-        err_adjst = data(ier,i)*r10
+        err_input = sqrt(oberrfact)*data(ier,i)*r10   ! r10 converts cb to mb
+        err_adjst = sqrt(oberrfact)*data(ier,i)*r10
         if (ratio_errors*error/r10>tiny_r_kind) then
-           err_final = r10/(ratio_errors*error)
+           err_final = sqrt(oberrfact)*r10/(ratio_errors*error)
         else
            err_final = huge_single
         endif

@@ -127,7 +127,7 @@ subroutine setupbend(obsLL,odiagLL, &
   use kinds, only: r_kind,i_kind
   use m_gpsStats, only: gps_allhead,gps_alltail
   use obsmod , only: nprof_gps,lobsdiag_allocated,&
-      lobsdiagsave,nobskeep,&
+      oberrfact,lobsdiagsave,nobskeep,&
       time_offset,lobsdiag_forenkf
   use qcmod, only: gps_jacqc
   use m_obsNode, only: obsNode
@@ -959,7 +959,7 @@ subroutine setupbend(obsLL,odiagLL, &
         endif
 
         if (ratio_errors(i)*data(ier,i)>tiny_r_kind) then
-           err_final = ratio_errors(i)*data(ier,i)
+           err_final = ratio_errors(i)*sqrt(oberrfact)*data(ier,i)
         else
            err_final = tiny_r_kind
         endif
@@ -969,9 +969,9 @@ subroutine setupbend(obsLL,odiagLL, &
         errinv_final  = tiny_r_kind
 
 
-        if (error(i)>tiny_r_kind)       errinv_input=error(i)
-        if (error_adjst(i)>tiny_r_kind) errinv_adjst=error_adjst(i)
-        if (err_final>tiny_r_kind)      errinv_final=err_final
+        if (error(i)>tiny_r_kind)       errinv_input=error(i)/sqrt(oberrfact)
+        if (error_adjst(i)>tiny_r_kind) errinv_adjst=error_adjst(i)/sqrt(oberrfact)
+        if (err_final>tiny_r_kind)      errinv_final=err_final/sqrt(oberrfact)
 
         rdiagbuf(13,i) = zero ! nonlinear qc relative weight - will be defined in genstats_gps
         rdiagbuf(14,i) = errinv_input ! original inverse gps obs error (rad**-1)
@@ -1031,8 +1031,8 @@ subroutine setupbend(obsLL,odiagLL, &
         if (istatus/=0) write(6,*)'SETUPBEND:  allocate error for gps_alldiag, istatus=',istatus
 
         gps_alltail(ibin)%head%ratio_err= ratio_errors(i)
-        gps_alltail(ibin)%head%obserr   = data(ier,i)
-        gps_alltail(ibin)%head%dataerr  = data(ier,i)*data(igps,i)
+        gps_alltail(ibin)%head%obserr   = sqrt(oberrfact)*data(ier,i)
+        gps_alltail(ibin)%head%dataerr  = sqrt(oberrfact)*data(ier,i)*data(igps,i)
         gps_alltail(ibin)%head%pg       = cvar_pg(ikx)
         gps_alltail(ibin)%head%b        = cvar_b(ikx)
         gps_alltail(ibin)%head%loc      = data(ihgt,i)
@@ -1247,7 +1247,7 @@ subroutine setupbend(obsLL,odiagLL, &
 
            my_head%raterr2= ratio_errors(i)**2     
            my_head%res    = data(igps,i)
-           my_head%err2   = data(ier,i)**2
+           my_head%err2   = oberrfact*data(ier,i)**2
            my_head%time   = data(itime,i)
            my_head%b      = cvar_b(ikx)
            my_head%pg     = cvar_pg(ikx)
@@ -1264,8 +1264,8 @@ subroutine setupbend(obsLL,odiagLL, &
            gps_alltail(ibin)%head%rdiag(j)= rdiagbuf(j,i)
         end do
         gps_alltail(ibin)%head%ratio_err= ratio_errors(i)
-        gps_alltail(ibin)%head%obserr   = data(ier,i)
-        gps_alltail(ibin)%head%dataerr  = data(ier,i)*data(igps,i)
+        gps_alltail(ibin)%head%obserr   = sqrt(oberrfact)*data(ier,i)
+        gps_alltail(ibin)%head%dataerr  = sqrt(oberrfact)*data(ier,i)*data(igps,i)
         gps_alltail(ibin)%head%muse     = muse(i) ! logical
      endif ! (last_pass)
   end do ! i=1,nobs

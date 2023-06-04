@@ -29,7 +29,7 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   use m_obsdiagNode, only: obsdiagNode_assert
 
   use obsmod, only: sfcmodel,perturb_obs,oberror_tune,lobsdiag_forenkf,ianldate,&
-       lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset,aircraft_recon
+       oberrfact,lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset,aircraft_recon
   use m_obsNode, only: obsNode
   use m_tNode, only: tNode
   use m_tNode, only: tNode_appendto
@@ -1024,7 +1024,7 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
         call get_ijk(mm1,dlat,dlon,dpres,my_head%ij,my_head%wij)
 
         my_head%res     = ddiff
-        my_head%err2    = error**2
+        my_head%err2    = error**2/oberrfact
         my_head%raterr2 = ratio_errors**2      
         my_head%time    = dtime
         my_head%b       = cvar_b(ikx)
@@ -1113,10 +1113,10 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
      if (conv_diagsave .and. luse(i)) then
         ii=ii+1
         rstation_id = data(id,i)
-        err_input = data(ier2,i)
-        err_adjst = data(ier,i)
+        err_input = sqrt(oberrfact)*data(ier2,i)
+        err_adjst = sqrt(oberrfact)*data(ier,i)
         if (ratio_errors*error>tiny_r_kind) then
-           err_final = one/(ratio_errors*error)
+           err_final = sqrt(oberrfact)/(ratio_errors*error)
         else
            err_final = huge_single
         endif
@@ -1192,7 +1192,7 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            my_head%elon= data(ilone,i)
 
            my_head%res     = ddiff
-           my_head%err2    = error**2
+           my_head%err2    = error**2/oberrfact
            my_head%raterr2 = ratio_errors**2
            my_head%time    = dtime
            my_head%b       = cvar_b(ikx)
@@ -1227,10 +1227,10 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
               iip=iip+1
               if(iip <= 3*nobs) then
                  rstation_id     = data(id,i)
-                 err_input = data(ier2,i)
-                 err_adjst = data(ier,i)
+                 err_input = sqrt(oberrfact)*data(ier2,i)
+                 err_adjst = sqrt(oberrfact)*data(ier,i)
                  if (ratio_errors*error>tiny_r_kind) then
-                    err_final = one/(ratio_errors*error)
+                    err_final = sqrt(oberrfact)/(ratio_errors*error)
                  else
                     err_final = huge_single
                  endif

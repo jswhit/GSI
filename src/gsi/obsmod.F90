@@ -466,6 +466,7 @@ module obsmod
   public :: mype_pm10,iout_pm10
   public :: use_limit,lrun_subdirs
   public :: l_foreaft_thin,luse_obsdiag
+  public :: oberrfact
 
   ! ==== DBZ DA ===
   public :: ntilt_radarfiles
@@ -619,7 +620,7 @@ module obsmod
   logical ::  doradaroneob
   logical :: vr_dealisingopt, if_vterminal, if_model_dbz, inflate_obserr, if_vrobs_raw, l2rwthin
   character(4) :: whichradar,oneobradid
-  real(r_kind) :: oneoblat,oneoblon,oneobddiff,oneobvalue,oneobheight
+  real(r_kind) :: oneoblat,oneoblon,oneobddiff,oneobvalue,oneobheight,oberrfact
   logical :: radar_no_thinning
   logical :: ens_hx_dbz_cut
   real(r_kind) ::static_gsi_nopcp_dbz
@@ -794,6 +795,7 @@ contains
     lobsdiag_allocated=.false.
     lobsdiag_forenkf = .false.
     lobskeep=.false.
+    oberrfact = 1.0 ! ob error inflation (default is no inflation)
     nobskeep=0
     lsaveobsens=.false.
     l_do_adjoint=.true.     ! .true. = apply H^T when in int routines

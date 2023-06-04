@@ -113,7 +113,7 @@ subroutine setupps(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsa
   use m_obsdiagNode, only: obsdiagNode_assert
 
   use obsmod, only: rmiss_single,perturb_obs,oberror_tune,&
-                    lobsdiagsave,nobskeep,lobsdiag_allocated,&
+                    oberrfact,lobsdiagsave,nobskeep,lobsdiag_allocated,&
                     time_offset,lobsdiag_forenkf,ianldate
   use m_obsNode, only: obsNode
   use m_psNode, only: psNode
@@ -611,7 +611,7 @@ subroutine setupps(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsa
         call get_ij(mm1,dlat,dlon,my_head%ij,my_head%wij)
 
         my_head%res      = ddiff
-        my_head%err2     = error**2
+        my_head%err2     = oberrfact*error**2
         my_head%raterr2  = ratio_errors**2     
         my_head%time     = dtime
         my_head%b        = cvar_b(ikx)
@@ -643,10 +643,10 @@ subroutine setupps(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsa
         pges     = pges*r10
         pgesorig = pgesorig*r10
 
-        err_input = data(ier2,i)*r10   ! r10 converts cb to mb
-        err_adjst = data(ier,i)*r10
+        err_input = sqrt(oberrfact)*data(ier2,i)*r10   ! r10 converts cb to mb
+        err_adjst = sqrt(oberrfact)*data(ier,i)*r10
         if (ratio_errors*error/r10>tiny_r_kind) then
-           err_final = r10/(ratio_errors*error)
+           err_final = sqrt(oberrfact)*r10/(ratio_errors*error)
         else
            err_final = huge_single
         endif

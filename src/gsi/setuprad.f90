@@ -261,7 +261,7 @@ contains
 
   use obsmod, only: ianldate,ndat,mype_diaghdr,nchan_total, &
       dplat,dtbduv_on,lobsdiag_forenkf,&
-      lobsdiagsave,nobskeep,lobsdiag_allocated,&
+      lobsdiagsave,nobskeep,lobsdiag_allocated,oberrfact,&
       dirname,time_offset,lwrite_predterms,lwrite_peakwt,reduce_diag
   use m_obsNode, only: obsNode
   use m_radNode, only: radNode
@@ -1967,7 +1967,7 @@ contains
                     iii=iii+1
 
                     my_head%res(iii)= tbc(ii)                   !  evecs(R)*[obs-ges innovation]
-                    my_head%err2(iii)= err2(ii)                 !  1/eigenvalue(R)
+                    my_head%err2(iii)= err2(ii)/oberrfact       !  1/eigenvalue(R)
                     my_head%raterr2(iii)=raterr2(ii)            !  inflation factor 
                     my_head%icx(iii)= m                         ! channel index
 
@@ -2126,7 +2126,7 @@ contains
 
                     iii=iii+1
                     my_headm%res(iii)=tbc(ii)                 ! obs-ges innovation
-                    my_headm%err2(iii)=one/error0(ii)**2      ! 1/(obs error)**2  (original uninflated error)
+                    my_headm%err2(iii)=error0(ii)**2/oberrfact     ! 1/(obs error)**2  (original uninflated error)
                     my_headm%raterr2(iii)=error0(ii)**2*varinv(ii) ! (original error)/(inflated error)
                     my_headm%icx(iii)=m                       ! channel index
                     do k=1,npred
@@ -2422,7 +2422,7 @@ contains
               diagbufchan(1,i)=tb_obs0(ich_diag(i))      ! observed brightness temperature (K)
               diagbufchan(2,i)=tbc0(ich_diag(i))         ! observed - simulated Tb with bias corrrection (K)
               diagbufchan(3,i)=tbcnob(ich_diag(i))       ! observed - simulated Tb with no bias correction (K)
-              errinv = sqrt(varinv0(ich_diag(i)))
+              errinv = sqrt(varinv0(ich_diag(i))/oberrfact)
               diagbufchan(4,i)=errinv                    ! inverse observation error
               useflag=one
               if (iuse_rad(ich(ich_diag(i))) < 1) useflag=-one
@@ -2651,12 +2651,12 @@ contains
                  call nc_diag_metadata("Observation",                           sngl(tb_obs0(ich_diag(i)))  )     ! observed brightness temperature (K)
                  call nc_diag_metadata("Obs_Minus_Forecast_unadjusted",         sngl(tbcnob(ich_diag(i)))  )     ! observed - simulated Tb with no bias correction (K)
                  call nc_diag_metadata("Obs_Minus_Forecast_adjusted",           sngl(tbc0(ich_diag(i)  ))  )     ! observed - simulated Tb with bias corrrection (K)
-                 errinv = sqrt(varinv0(ich_diag(i)))
+                 errinv = sqrt(varinv0(ich_diag(i))/oberrfact)
                  call nc_diag_metadata("Inverse_Observation_Error",             sngl(errinv)          )
                  if (save_jacobian .and. allocated(idnames)) then
                  call nc_diag_metadata("Observation_scaled",                    sngl(tb_obs(ich_diag(i)))  )     ! observed brightness temperature (K) scaled by R^{-1/2}
                  call nc_diag_metadata("Obs_Minus_Forecast_adjusted_scaled",    sngl(tbc(ich_diag(i)  ))  )     ! observed - simulated Tb with bias corrrection (K) scaled by R^{-1/2}
-                 errinv = sqrt(varinv(ich_diag(i)))
+                 errinv = sqrt(varinv(ich_diag(i))/oberrfact)
                  call nc_diag_metadata("Inverse_Observation_Error_scaled",      sngl(errinv)          )
                  endif
                  if (save_jacobian) then
