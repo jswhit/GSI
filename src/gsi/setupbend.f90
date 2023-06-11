@@ -1247,7 +1247,7 @@ subroutine setupbend(obsLL,odiagLL, &
 
            my_head%raterr2= ratio_errors(i)**2     
            my_head%res    = data(igps,i)
-           my_head%err2   = oberrfact*data(ier,i)**2
+           my_head%err2   = data(ier,i)**2/oberrfact
            my_head%time   = data(itime,i)
            my_head%b      = cvar_b(ikx)
            my_head%pg     = cvar_pg(ikx)

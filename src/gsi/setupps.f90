@@ -611,7 +611,7 @@ subroutine setupps(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsa
         call get_ij(mm1,dlat,dlon,my_head%ij,my_head%wij)
 
         my_head%res      = ddiff
-        my_head%err2     = oberrfact*error**2
+        my_head%err2     = error**2/oberrfact
         my_head%raterr2  = ratio_errors**2     
         my_head%time     = dtime
         my_head%b        = cvar_b(ikx)

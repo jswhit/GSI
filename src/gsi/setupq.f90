@@ -780,7 +780,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
         call get_ijk(mm1,dlat,dlon,dpres,my_head%ij,my_head%wij)
         
         my_head%res    = ddiff
-        my_head%err2   = oberrfact*error**2
+        my_head%err2   = error**2/oberrfact
         my_head%raterr2= ratio_errors**2   
         my_head%time   = dtime
         my_head%b      = cvar_b(ikx)
@@ -890,7 +890,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            error=one/(data(ier2,i)*qsges)
 
            my_head%res     = ddiff
-           my_head%err2    = oberrfact*error**2
+           my_head%err2    = error**2/oberrfact
            my_head%raterr2 = ratio_errors**2
            my_head%time    = dtime
            my_head%b       = cvar_b(ikx)
