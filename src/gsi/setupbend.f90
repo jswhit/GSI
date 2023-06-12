@@ -959,7 +959,7 @@ subroutine setupbend(obsLL,odiagLL, &
         endif
 
         if (ratio_errors(i)*data(ier,i)>tiny_r_kind) then
-           err_final = ratio_errors(i)*sqrt(oberrfact)*data(ier,i)
+           err_final = ratio_errors(i)*data(ier,i)/sqrt(oberrfact)
         else
            err_final = tiny_r_kind
         endif
@@ -1031,8 +1031,8 @@ subroutine setupbend(obsLL,odiagLL, &
         if (istatus/=0) write(6,*)'SETUPBEND:  allocate error for gps_alldiag, istatus=',istatus
 
         gps_alltail(ibin)%head%ratio_err= ratio_errors(i)
-        gps_alltail(ibin)%head%obserr   = sqrt(oberrfact)*data(ier,i)
-        gps_alltail(ibin)%head%dataerr  = sqrt(oberrfact)*data(ier,i)*data(igps,i)
+        gps_alltail(ibin)%head%obserr   = data(ier,i)/sqrt(oberrfact)
+        gps_alltail(ibin)%head%dataerr  = data(ier,i)*data(igps,i)/sqrt(oberrfact)
         gps_alltail(ibin)%head%pg       = cvar_pg(ikx)
         gps_alltail(ibin)%head%b        = cvar_b(ikx)
         gps_alltail(ibin)%head%loc      = data(ihgt,i)
@@ -1264,8 +1264,8 @@ subroutine setupbend(obsLL,odiagLL, &
            gps_alltail(ibin)%head%rdiag(j)= rdiagbuf(j,i)
         end do
         gps_alltail(ibin)%head%ratio_err= ratio_errors(i)
-        gps_alltail(ibin)%head%obserr   = sqrt(oberrfact)*data(ier,i)
-        gps_alltail(ibin)%head%dataerr  = sqrt(oberrfact)*data(ier,i)*data(igps,i)
+        gps_alltail(ibin)%head%obserr   = data(ier,i)/sqrt(oberrfact)
+        gps_alltail(ibin)%head%dataerr  = data(ier,i)*data(igps,i)/sqrt(oberrfact)
         gps_alltail(ibin)%head%muse     = muse(i) ! logical
      endif ! (last_pass)
   end do ! i=1,nobs
