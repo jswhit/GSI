@@ -317,11 +317,11 @@ subroutine read_abi(mype,val_abi,ithin,rmesh,jsatid,&
         sstime = real(nmind,r_kind) + real(hdr(7),r_kind)*r60inv
         tdiff=(sstime-gstime)*r60inv
 !    remove the tdiff QC check
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+        !else
            if (abs(tdiff)>twind) cycle read_loop
-        endif
+        !endif
 
         crit0 = 0.01_r_kind
         timeinflat=6.0_r_kind

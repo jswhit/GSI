@@ -452,13 +452,13 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            idate5(5) = hdrdat(8)     ! minutes
            call w3fs21(idate5,nmind)
            t4dv = real((nmind-iwinbgn),r_kind)*r60inv
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<zero .OR. t4dv>winlen) cycle loop_readsb 
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<zero .OR. t4dv>winlen) cycle loop_readsb 
+           !else
               sstime = real(nmind,r_kind) 
               tdiff=(sstime-gstime)*r60inv
               if (abs(tdiff)>twind) cycle loop_readsb 
-           endif
+           !endif
 
 
 !       determine the satellite wind type as in prepbufr

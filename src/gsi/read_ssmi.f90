@@ -292,11 +292,11 @@ subroutine read_ssmi(mype,val_ssmi,ithin,rmesh,jsatid,gstime,&
         t4dv=(real(nmind-iwinbgn,r_kind) + real(bfr1bhdr(7),r_kind)*r60inv)*r60inv
         sstime=real(nmind,r_kind) + real(bfr1bhdr(7),r_kind)*r60inv
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+        !else
            if(abs(tdiff) > twind)  cycle read_loop
-        endif
+        !endif
 
 ! ----- Read header record to extract obs location information  
 !       SSM/I data are stored in groups of nscan, hence the loop.  

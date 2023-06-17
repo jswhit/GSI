@@ -395,11 +395,11 @@ subroutine read_avhrr(mype,val_avhrr,ithin,rmesh,jsatid,&
            sstime=real(nmind,r_kind) + rsc*r60inv
            tdiff=(sstime-gstime)*r60inv
 
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+           !else
               if (abs(tdiff) > twind) cycle read_loop
-           endif
+           !endif
 
            nread = nread + 1
 !

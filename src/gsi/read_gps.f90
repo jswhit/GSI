@@ -241,13 +241,13 @@ subroutine read_gps(nread,ndata,nodata,infile,lunout,obstype,twind, &
    
 ! check time window in subset
         t4dv=real((minobs-iwinbgn),r_kind)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) then
-              write(6,*)'READ_GPS:      time outside window ',&
-                   t4dv,' skip this report'
-              cycle read_loop
-           endif
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) then
+        !      write(6,*)'READ_GPS:      time outside window ',&
+        !           t4dv,' skip this report'
+        !      cycle read_loop
+        !   endif
+        !else
            call w3fs21(iadate,mincy) ! analysis time in minutes
            timeo=real(minobs-mincy,r_kind)*r60inv
            if (abs(timeo)>ctwind(ikx) .or. abs(timeo) > twind) then
@@ -255,7 +255,7 @@ subroutine read_gps(nread,ndata,nodata,infile,lunout,obstype,twind, &
                    timeo,' skip this report'
               cycle read_loop
            endif
-        endif
+        !endif
  
 ! Check profile quality flags
         if ( ((said > 739).and.(said < 746)).or.(said == 820).or.(said == 786).or. &

@@ -462,11 +462,11 @@ subroutine read_ssmis(mype,val_ssmis,ithin,isfcalc,rmesh,jsatid,gstime,&
         call w3fs21(iobsdate,nmind)
         t4dv=(real(nmind-iwinbgn,r_kind) + real(bufrinit(2),r_kind)*r60inv)*r60inv
         tdiff=t4dv+(iwinbgn-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+        !else
            if(abs(tdiff) > twind+one_minute) cycle read_loop
-        endif
+        !endif
 
         crit0 = 0.01_r_kind
         timeinflat=6.0_r_kind
@@ -659,11 +659,11 @@ subroutine read_ssmis(mype,val_ssmis,ithin,isfcalc,rmesh,jsatid,gstime,&
 
 !    Check time window
      tdiff=t4dv+(iwinbgn-gstime)*r60inv
-     if (l4dvar.or.l4densvar) then
-        if (t4dv<zero .OR. t4dv>winlen) cycle obsloop 
-     else
+     !if (l4dvar.or.l4densvar) then
+     !   if (t4dv<zero .OR. t4dv>winlen) cycle obsloop 
+     !else
         if(abs(tdiff) > twind) cycle ObsLoop
-     endif
+     !endif
 
 !    Map obs to thinning grid
      call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse,sis,it_mesh=it_mesh)

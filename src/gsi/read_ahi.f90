@@ -328,11 +328,11 @@ subroutine read_ahi(mype,val_img,ithin,rmesh,jsatid,gstime,&
         t4dv = (real((nmind-iwinbgn),r_kind) + real(hdrh8arr(7),r_kind)*r60inv)*r60inv
         sstime = real(nmind,r_kind) + real(hdrh8arr(7),r_kind)*r60inv
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+        !else
            if (abs(tdiff)>twind) cycle read_loop
-        endif
+        !endif
 
         crit0 = 0.01_r_kind
         timeinflat=6.0_r_kind

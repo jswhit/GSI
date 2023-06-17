@@ -669,11 +669,11 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            t4dv = real((nmind-iwinbgn),r_kind)*r60inv
            sstime = real(nmind,r_kind) 
            tdiff=(sstime-gstime)*r60inv
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<zero .OR. t4dv>winlen) cycle loop_readsb 
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<zero .OR. t4dv>winlen) cycle loop_readsb 
+           !else
               if (abs(tdiff)>twind) cycle loop_readsb 
-           endif
+           !endif
            iosub=0
 
            if(abs(hdrdat(2)) >r90 ) cycle loop_readsb 

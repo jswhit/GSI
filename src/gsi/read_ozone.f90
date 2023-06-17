@@ -348,11 +348,11 @@ subroutine read_ozone(nread,ndata,nodata,jsatid,infile,gstime,lunout, &
         t4dv=real((nmind-iwinbgn),r_kind)*r60inv
         sstime=real(nmind,r_kind)
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if(t4dv<zero .OR. t4dv>winlen) cycle read_loop1
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if(t4dv<zero .OR. t4dv>winlen) cycle read_loop1
+        !else
            if(abs(tdiff) > twind) cycle read_loop1
-        end if
+        !end if
      
 !       Extract layer ozone values and compute profile total ozone
         if (version8) then
@@ -533,11 +533,11 @@ subroutine read_ozone(nread,ndata,nodata,jsatid,infile,gstime,lunout, &
         t4dv=real((nmind-iwinbgn),r_kind)*r60inv
         sstime=real(nmind,r_kind)
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if(t4dv<zero .OR. t4dv>winlen) cycle obsloop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if(t4dv<zero .OR. t4dv>winlen) cycle obsloop
+        !else
            if(abs(tdiff) > twind) cycle obsloop
-        end if
+        !end if
 
 !       extract total ozone
         call ufbint(lunin,totoz,1,1,iret,'OZON')
@@ -694,11 +694,11 @@ subroutine read_ozone(nread,ndata,nodata,jsatid,infile,gstime,lunout, &
         t4dv=real((nmind-iwinbgn),r_kind)*r60inv
         sstime=real(nmind,r_kind)
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop2
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop2
+        !else
            if(abs(tdiff) > twind) cycle read_loop2
-        end if
+        !end if
 
 !       extract total ozone
         call ufbint(lunin,totoz,1,1,iret,'OZON')
@@ -933,11 +933,11 @@ subroutine read_ozone(nread,ndata,nodata,jsatid,infile,gstime,lunout, &
         t4dv=real((nmind-iwinbgn),r_kind)*r60inv
         sstime=real(nmind,r_kind)
         tdiff=(sstime-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<zero .OR. t4dv>winlen) cycle read_loop4
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop4
+        !else
            if(abs(tdiff) > twind) cycle read_loop4
-        end if
+        !end if
 
 !    v2.2 data screening, only accept:
 !    Pressure range(PRLC):       215-0.02mb (lev5-27)
@@ -1177,11 +1177,11 @@ subroutine read_ozone(nread,ndata,nodata,jsatid,infile,gstime,lunout, &
        t4dv=real((nmind-iwinbgn),r_kind)*r60inv
        sstime=real(nmind,r_kind)
        tdiff=(sstime-gstime)*r60inv
-       if (l4dvar.or.l4densvar) then
-         if (t4dv<zero .OR. t4dv>winlen) cycle read_loop5
-       else
+       !if (l4dvar.or.l4densvar) then
+       !  if (t4dv<zero .OR. t4dv>winlen) cycle read_loop5
+       !else
          if(abs(tdiff) > twind) cycle read_loop5
-       endif
+       !endif
 
        !Read solar zenith angle
        call ufbint(lunin,soza,1,1,iret,"SOZA")

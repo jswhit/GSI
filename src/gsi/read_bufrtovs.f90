@@ -662,11 +662,11 @@ subroutine read_bufrtovs(mype,val_tovs,ithin,isfcalc,&
            t4dv= (real((nmind-iwinbgn),r_kind) + bfr1bhdr(8)*r60inv)*r60inv    ! add in seconds
            sstime= real(nmind,r_kind) + bfr1bhdr(8)*r60inv    ! add in seconds
            tdiff=(sstime-gstime)*r60inv
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+           !else
               if(abs(tdiff) > twind) cycle read_loop
-           endif
+           !endif
 
            nread=nread+nchanl
 

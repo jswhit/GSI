@@ -573,11 +573,11 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
            sstime = real(nmind,r_kind) + real(allspot(7),r_kind)*r60inv ! add in seconds
            tdiff = (sstime - gstime)*r60inv
 
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+           !else
               if (abs(tdiff)>twind) cycle read_loop
-           endif
+           !endif
 
 !          Increment nread counter by bufr_nchan    (should be changed to number of channels in satinfo file? (satinfo_nchan))
            nread = nread + satinfo_nchan

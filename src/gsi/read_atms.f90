@@ -434,12 +434,12 @@ subroutine read_atms(mype,val_tovs,ithin,isfcalc,&
            t4dv= (real((nmind-iwinbgn),r_kind) + bfr1bhdr(8)*r60inv)*r60inv    ! add in seconds
            tdiff=t4dv+(iwinbgn-gstime)*r60inv
 
-           if (l4dvar.or.l4densvar) then
-              if (t4dv<minus_one_minute .OR. t4dv>winlen+one_minute) &
-                  cycle read_loop
-           else
+           !if (l4dvar.or.l4densvar) then
+           !   if (t4dv<minus_one_minute .OR. t4dv>winlen+one_minute) &
+           !       cycle read_loop
+           !else
               if(abs(tdiff) > twind+one_minute) cycle read_loop
-           endif
+           !endif
 
            timeinflat=two
            call tdiff2crit(tdiff,ptime,ithin_time,timeinflat,crit0,crit1,it_mesh)
@@ -574,12 +574,12 @@ subroutine read_atms(mype,val_tovs,ithin,isfcalc,&
      endif
 
 ! Check time window
-     if (l4dvar.or.l4densvar) then
-        if (t4dv<zero .OR. t4dv>winlen) cycle ObsLoop
-     else
+     !if (l4dvar.or.l4densvar) then
+     !   if (t4dv<zero .OR. t4dv>winlen) cycle ObsLoop
+     !else
         tdiff=t4dv+(iwinbgn-gstime)*r60inv
         if(abs(tdiff) > twind) cycle ObsLoop
-     endif
+     !endif
  
 !    Map obs to thinning grid
      call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse,sis,it_mesh=it_mesh)

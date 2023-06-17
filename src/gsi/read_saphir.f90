@@ -336,12 +336,12 @@ subroutine read_saphir(mype,val_tovs,ithin,isfcalc,&
         call w3fs21(idate5,nmind)
         t4dv= (real((nmind-iwinbgn),r_kind) + bfr1bhdr(8)*r60inv)*r60inv    ! add in seconds
         tdiff=t4dv+(iwinbgn-gstime)*r60inv
-        if (l4dvar.or.l4densvar) then
-           if (t4dv<minus_one_minute .OR. t4dv>winlen+one_minute) &
-                cycle read_loop
-        else
+        !if (l4dvar.or.l4densvar) then
+        !   if (t4dv<minus_one_minute .OR. t4dv>winlen+one_minute) &
+        !        cycle read_loop
+        !else
            if(abs(tdiff) > twind+one_minute) cycle read_loop
-        endif
+        !endif
  
         crit0 = 0.01_r_kind
         timeinflat=two
