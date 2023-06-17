@@ -709,7 +709,7 @@ end if
 
 ! background forecast time for analysis
 nbackgrounds=0
-do while (nhr_anal(nbackgrounds+1) > 0)
+do while (nhr_anal(nbackgrounds+1) .ge. 0)
    write(charfhr_anal(nbackgrounds+1),'(i2.2)') nhr_anal(nbackgrounds+1)
    if (trim(fgfileprefixes(nbackgrounds+1)) .eq. "") then
      ! default first-guess file prefix
@@ -731,7 +731,7 @@ end do
 
 ! state fields
 nstatefields=0
-do while (nhr_state(nstatefields+1) > 0)
+do while (nhr_state(nstatefields+1) .ge. 0)
    write(charfhr_state(nstatefields+1),'(i2.2)') nhr_state(nstatefields+1)
    if (trim(statefileprefixes(nstatefields+1)) .eq. "") then
      ! default first-guess file prefix
