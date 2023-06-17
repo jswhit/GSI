@@ -29,7 +29,7 @@
      ntilt_radarfiles,whichradar,&
      minobrangevr,maxtiltdbz,mintiltvr,mintiltdbz,l2rwthin,hurricane_radar 
 
-  use obsmod, only: lwrite_predterms, &
+  use obsmod, only: lwrite_predterms,lwrite_sfcanl, &
      lwrite_peakwt,use_limit,lrun_subdirs,l_foreaft_thin,lobsdiag_forenkf,&
      obsmod_init_instr_table,obsmod_final_instr_table
   use obsmod, only: luse_obsdiag
@@ -626,6 +626,7 @@
 !                        radiance diagnostic files
 !     lwrite_peakwt    - option to writ out the approximate pressure of the peak of the weighting function
 !                        for satellite data to the radiance diagnostic files
+!     lwrite_sfcanl    - write surface analysis?
 !     adp_anglebc - option to perform variational angle bias correction
 !     angord      - order of polynomial for variational angle bias correction
 !     newpc4pred  - option for additional preconditioning for pred coeff.
@@ -754,7 +755,7 @@
        use_fv3_aero,&
        nwrvecs,iorthomax,ladtest,ladtest_obs, lgrtest,lobskeep,lsensrecompute,jsiga,ltcost, &
        lobsensfc,lobsensjb,lobsensincr,lobsensadj,lobsensmin,iobsconv, &
-       idmodel,iwrtinc,lwrite4danl,nhr_anal,jiterstart,jiterend,lobserver,lanczosave,llancdone, &
+       idmodel,iwrtinc,lwrite4danl,lwrite_sfcanl,nhr_anal,jiterstart,jiterend,lobserver,lanczosave,llancdone, &
        lferrscale,print_diag_pcg,tsensible,lread_obs_save,lread_obs_skip, &
        use_gfs_ozone,check_gfs_ozone_date,regional_ozone,lwrite_predterms,&
        lwrite_peakwt,use_gfs_nemsio,use_gfs_ncio,sfcnst_comb,liauon,use_prepb_satwnd,l4densvar,ens_nstarthr,&

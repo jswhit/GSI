@@ -385,6 +385,7 @@ module obsmod
 !   def lwrite_predterms - logical to write out actual predictor terms in diagnostic files
 !                          .true. will write out actual predictor terms (for EnKF)
 !                          .false. will write out predicted bias (default)
+!   def lwrite_sfcanl    - write sfcanl?
 !   def lwrite_peakwt    - logical to write out approximate peak pressure of weighting 
 !                          function to diag file
 !                          .true. - uses iextra,jextra to append information to diag file
@@ -459,7 +460,7 @@ module obsmod
   public :: mype_pmsl,mype_howv,iout_pmsl,iout_howv
   public :: mype_swcp,mype_lwcp,iout_swcp,iout_lwcp
   public :: lread_obs_save,obs_input_common,lread_obs_skip
-  public :: ndat_times,lwrite_predterms,lwrite_peakwt
+  public :: ndat_times,lwrite_predterms,lwrite_peakwt,lwrite_sfcanl
   public :: bmiss
   public :: mype_aero,iout_aero,nlaero
   public :: mype_pm2_5,iout_pm2_5
@@ -645,6 +646,7 @@ module obsmod
   logical lread_obs_save
   logical lread_obs_skip
   logical lwrite_predterms
+  logical lwrite_sfcanl
   logical lwrite_peakwt
   logical ext_sonde
   logical lrun_subdirs
@@ -916,6 +918,7 @@ contains
     lread_obs_save   = .false.
     lread_obs_skip   = .false.
     lwrite_predterms = .false.
+    lwrite_sfcanl    = .true.
     lwrite_peakwt    = .false.
     lrun_subdirs     = .false.
     l_foreaft_thin   = .false.

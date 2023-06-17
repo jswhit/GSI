@@ -149,6 +149,7 @@ subroutine glbsoi
   use convb_uv, only: convb_uv_destroy
   use zrnmi_mod, only: zrnmi_initialize
   use observermod, only: observer_init,observer_set,observer_finalize,ndata
+  use mpimod, only: mpi_rtype,mpi_comm_world,ierror,npe,mpi_itype
   use timermod, only: timer_ini, timer_fnl
   use hybrid_ensemble_parameters, only: l_hyb_ens,destroy_hybens_localization_parameters
   use hybrid_ensemble_isotropic, only: create_ensemble,load_ensemble,destroy_ensemble, &
@@ -478,6 +479,7 @@ subroutine glbsoi
         endif
      endif
   endif
+  call mpi_barrier(mpi_comm_world,ierror)
 
 ! Finalize cost function 
   call destroy_jfunc

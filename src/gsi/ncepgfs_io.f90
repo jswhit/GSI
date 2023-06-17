@@ -1177,6 +1177,7 @@ end subroutine write_ghg_grid
     use gsi_chemguess_mod, only: gsi_chemguess_get,gsi_chemguess_bundle
     use chemmod, only: laeroana_gocart
     use radiance_mod, only: aerosol_names
+    use obsmod, only: lwrite_sfcanl
 
     implicit none
 
@@ -1341,7 +1342,7 @@ end subroutine write_ghg_grid
         if ( lwrite4danl ) then
             ! check to see if we want to output this time.
             ! if not, skip to next time
-            if (count(nhr_anal/=0)>0) then
+            if (count(nhr_anal/=0).ge.0) then
                if (count(nhr_anal==ifilesig(it))==0) cycle
             endif
             itoutsig = it
@@ -1496,6 +1497,7 @@ end subroutine write_ghg_grid
     enddo ! end do over ntlevs
 
     ! Write surface analysis file
+    if (lwrite_sfcanl) then
     if ( increment > 0 ) then
         filename='sfcinc.gsi'
         if ( use_gfs_nemsio ) then
@@ -1528,6 +1530,7 @@ end subroutine write_ghg_grid
                call write_gfssfc (filename,mype_sfc,dsfct(1,1,ntguessfc))
            endif
        endif
+    endif
     endif
 
   end subroutine write_gfs
