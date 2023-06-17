@@ -109,7 +109,7 @@ module gsi_4dvar
   public :: time_4dvar
   public :: clean_4dvar
 ! set passed variables to public
-  public :: iadatebgn,l4dvar,nobs_bins,nhr_assimilation,lsqrtb,lbicg,nsubwin
+  public :: iadatebgn,l4dvar,nobs_bins,nhr_assimilation,nhr_cycle,lsqrtb,lbicg,nsubwin
   public :: hr_obsbin,ltlint,idmodel,iwrtinc,winsub,winlen,iwinbgn
   public :: min_offset,iadateend,ibdate,iedate,lanczosave,lbfgsmin
   public :: ladtest,ladtest_obs,lgrtest,lcongrad,nhr_obsbin,nhr_subwin,nwrvecs
@@ -149,7 +149,7 @@ module gsi_4dvar
   integer(i_kind) :: ibdate(5), iedate(5)
   integer(i_kind) :: nhr_obsbin, nobs_bins
   integer(i_kind) :: nhr_subwin, nsubwin
-  integer(i_kind) :: nhr_assimilation,min_offset
+  integer(i_kind) :: nhr_assimilation,min_offset,nhr_cycle
   integer(i_kind) :: nwrvecs
   integer(i_kind) :: iorthomax
   integer(i_kind) :: jsiga
@@ -203,6 +203,7 @@ l4densvar = .false.
 lnested_loops=.false.
 
 nhr_assimilation=6
+nhr_cycle=6
 min_offset=180
 
 nhr_subwin=-1
@@ -225,7 +226,7 @@ lwrite4danl = .false.
 thin4d = .false.
 ! if zero, output all times.
 ! if > 0, output specific fcst time given by nhr_anal
-nhr_anal = 0 
+nhr_anal = -1
 
 tau_fcst = -1          ! ensemble of forecast at hour current+tau_fcst 
 efsoi_order = 1        ! order of appox used in EFSOI-like settings
