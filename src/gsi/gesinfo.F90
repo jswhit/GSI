@@ -72,7 +72,7 @@ subroutine gesinfo
   use kinds, only: i_kind,r_kind,r_single
   use obsmod, only: iadate,ianldate,time_offset,iadatemn
   use gsi_4dvar, only: ibdate, iedate, iadatebgn, iadateend, iwinbgn,time_4dvar
-  use gsi_4dvar, only: nhr_assimilation,min_offset
+  use gsi_4dvar, only: nhr_assimilation,min_offset,nhr_cycle
   use mpimod, only: npe,mype
   use gridmod, only: idvc5,ak5,bk5,ck5,tref5,&
       regional,nsig,regional_fhr,regional_time,fv3_regional,&
@@ -145,7 +145,7 @@ subroutine gesinfo
   if(verbose)print_verbose=.true.
 ! Handle non-GMAO interface (ie, NCEP interface)
   if(.not. fv3_regional) then
-     write(filename,'("sigf",i2.2)')nhr_assimilation
+     write(filename,'("sigf",i2.2)')nhr_cycle
      inquire(file=filename,exist=fexist)
      if(.not.fexist) then
         write(6,*)' GESINFO:  ***FATAL ERROR*** ',trim(filename),' NOT AVAILABLE: PROGRAM STOPS'
@@ -335,7 +335,7 @@ subroutine gesinfo
 !          call stop2(99)
 !       endif
      else ! use_gfs_ncio and get this information
-        write(sfilename,'("sfcf",i2.2)')nhr_assimilation
+        write(sfilename,'("sfcf",i2.2)')nhr_cycle
         ! open the netCDF file
         atmges = open_dataset(filename,errcode=iret)
         if (iret /=0) then
@@ -546,6 +546,7 @@ subroutine gesinfo
   iadate(5)=0      ! minute
 #endif
   ianldate =jda(1)*1000000+jda(2)*10000+jda(3)*100+jda(5)
+  if (mype .eq. 0) print *,'ianldate=',ianldate
 
 ! Determine date and time at start of assimilation window
   ida(:)=0
@@ -553,12 +554,15 @@ subroutine gesinfo
   fha(:)=zero
   fha(2)=-float(int(min_offset/60))
   fha(3)=-(min_offset+fha(2)*r60)
+  !fha(2)=-float(nhr_assimilation)/2.
+  !fha(3)=-(float(nhr_assimilation)/2.+fha(2)*r60)
   ida(1:3)=iadate(1:3)
   ida(5:6)=iadate(4:5)
   call w3movdat(fha,ida,jda)
 
   ibdate(1:5)=(/jda(1),jda(2),jda(3),jda(5),jda(6)/)
   iadatebgn=jda(1)*1000000+jda(2)*10000+jda(3)*100+jda(5)
+  if (mype .eq. 0) print *,'iadatebgn=',iadatebgn
 
 ! Set the analysis time - this is output info...
 ! w3fs21(NCEP-w3) converts analysis time to minutes relative to a fixed date.
@@ -578,6 +582,7 @@ subroutine gesinfo
 
   iedate(1:5)=(/jda(1),jda(2),jda(3),jda(5),jda(6)/)
   iadateend=jda(1)*1000000+jda(2)*10000+jda(3)*100+jda(5)
+  if (mype .eq. 0) print *,'iadateend=',iadateend
 
 ! Get time offset
   call time_4dvar(ianldate,time_offset)
