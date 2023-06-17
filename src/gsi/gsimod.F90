@@ -58,7 +58,7 @@
        
   use obs_sensitivity, only: lobsensfc,lobsensincr,lobsensjb,lsensrecompute, &
                              lobsensadj,lobsensmin,iobsconv,llancdone,init_obsens
-  use gsi_4dvar, only: setup_4dvar,init_4dvar,nhr_assimilation,min_offset, &
+  use gsi_4dvar, only: setup_4dvar,init_4dvar,nhr_assimilation,nhr_cycle,min_offset, &
                        l4dvar,nhr_obsbin,nhr_subwin,nwrvecs,iorthomax,&
                        lbicg,lsqrtb,lcongrad,lbfgsmin,ltlint,ladtest,ladtest_obs, lgrtest,&
                        idmodel,clean_4dvar,iwrtinc,lanczosave,jsiga,ltcost,liauon, &
@@ -537,7 +537,8 @@
 !     qoption  - option of analysis variable; 1:q/qsatg-bkg 2:norm RH
 !     pseudo_q2- breed between q1/q2 options, that is, (q1/sig(q))
 !     fstat    - logical to seperate f from balance projection
-!     nhr_assimilation - assimilation time interval (currently 6hrs for global, 3hrs for reg)
+!     nhr_assimilation - assimilation window length (currently 6hrs for global, 3hrs for reg)
+!     nhr_cycle        - cycle length (currently 6hrs for global, 3hrs for reg)
 !     min_offset       - time in minutes of analysis in assimilation window (default 3 hours)
 !     l4dvar           - turn 4D-Var on/off (default=off=3D-Var)
 !     liauon           - treat 4dvar CV as tendency perturbation (default=false)
@@ -734,7 +735,7 @@
        factv,factl,factp,factg,factw10m,facthowv,factcldch,R_option,deltim,dtphys,&
        biascor,bcoption,diurnalbc,&
        neutral_stability_windfact_2dvar,use_similarity_2dvar,&
-       niter,niter_no_qc,miter,qoption,cwoption,nhr_assimilation,&
+       niter,niter_no_qc,miter,qoption,cwoption,nhr_assimilation,nhr_cycle,&
        min_offset,pseudo_q2,&
        iout_iter,npredp,retrieval,&
        tzr_qc,tzr_bufrsave,&
