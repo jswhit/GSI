@@ -546,28 +546,29 @@ subroutine gesinfo
   iadate(5)=0      ! minute
 #endif
   ianldate =jda(1)*1000000+jda(2)*10000+jda(3)*100+jda(5)
-  if (mype .eq. 0) print *,'ianldate=',ianldate
+  if (mype .eq. 0) print *,'ianldate=',iadate,ianldate
 
 ! Determine date and time at start of assimilation window
   ida(:)=0
   jda(:)=0
   fha(:)=zero
-  fha(2)=-float(int(min_offset/60))
-  fha(3)=-(min_offset+fha(2)*r60)
-  !fha(2)=-float(nhr_assimilation)/2.
-  !fha(3)=-(float(nhr_assimilation)/2.+fha(2)*r60)
+  !fha(2)=-float(int(min_offset/60))
+  !fha(3)=-(min_offset+fha(2)*r60)
+  fha(2)=-float(nhr_assimilation)/2.
+  fha(3)=-(float(nhr_assimilation)*r60/2.+fha(2)*r60)
   ida(1:3)=iadate(1:3)
   ida(5:6)=iadate(4:5)
   call w3movdat(fha,ida,jda)
 
   ibdate(1:5)=(/jda(1),jda(2),jda(3),jda(5),jda(6)/)
   iadatebgn=jda(1)*1000000+jda(2)*10000+jda(3)*100+jda(5)
-  if (mype .eq. 0) print *,'iadatebgn=',iadatebgn
+  if (mype .eq. 0) print *,'iadatebgn=',ibdate,iadatebgn
 
 ! Set the analysis time - this is output info...
 ! w3fs21(NCEP-w3) converts analysis time to minutes relative to a fixed date.
   call w3fs21(ibdate,nmin_an)
   iwinbgn = nmin_an
+  if (mype .eq. 0) print *,'iwinbgn=',iwinbgn
 
 ! Determine date and time at end of assimilation window
   ida(:)=jda(:)

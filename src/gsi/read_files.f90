@@ -180,6 +180,7 @@ subroutine read_files(mype)
            irec(nfldsig,1) = i
         end if
      enddo
+     if (mype .eq. 0) print *,'nfldsig = ',nfldsig
      if(nfldsig==0) then
         write(6,*)'READ_FILES: ***ERROR*** NO atm fields; aborting'
         call stop2(169)
@@ -194,6 +195,7 @@ subroutine read_files(mype)
            irec(nfldsfc,2) = i
         end if
      enddo
+     if (mype .eq. 0) print *,'nfldsfc = ',nfldsfc
      if(nfldsfc==0) then
         write(6,*)'READ_FILES: ***ERROR* NO sfc fields; aborting'
         call stop2(170)
@@ -300,8 +302,9 @@ subroutine read_files(mype)
         idate5(3)=idateg(3); idate5(4)=idateg(1); idate5(5)=0
         call w3fs21(idate5,nmings)
         nming2=nmings+60*hourg
-        write(6,*)'READ_FILES:  atm guess file ',filename,hourg,idateg,nming2
         t4dv=real((nming2-iwinbgn),r_kind)*r60inv
+        write(6,*)'READ_FILES:  atm guess file ',filename,hourg,idateg,&
+                   nming2,iwinbgn,t4dv,winlen
         if (l4dvar.or.l4densvar) then
            if (t4dv<zero .OR. t4dv>winlen) cycle
         else
@@ -607,9 +610,11 @@ subroutine read_files(mype)
 
 ! Load time information for atm guess field sinfo into output arrays
   ntguessig = iamana(1)
+  if (mype .eq. 0) print *,'ntguessig=',ntguessig
   do i=1,nfldsig
      hrdifsig(i) = time_atm(i,1)
      ifilesig(i) = nint(time_atm(i,2))
+     if (mype .eq. 0) print *,'i,hrdifsig,ifilesig=',hrdifsig(i),ifilesig(i)
      hrdifsig_all(i) = hrdifsig(i)
   end do
   if(mype == 0) write(6,*)'READ_FILES:  atm fcst files used in analysis  :  ',&

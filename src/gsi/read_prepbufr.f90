@@ -1099,12 +1099,11 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
            if (.not. (aircraft_t_bc .and. acft_profl_file)) then
               !if (l4dvar.or.l4densvar) then
-              !    if ((t4dv<zero.OR.t4dv>winlen) .and. .not.driftl) cycle loop_readsb ! outside time window
+                  if ((t4dv<zero.OR.t4dv>winlen) .and. .not.driftl) cycle loop_readsb ! outside time window
               !else
                  if((real(abs(time)) > real(ctwind(nc)) .or. real(abs(time)) > real(twindin)) &
                     .and. .not. driftl)cycle loop_readsb ! outside time window
               !endif
-              if (t4dv<zero.OR.t4dv>winlen) cycle loop_readsb ! outside time window
 
               timex=time
            end if
@@ -1840,11 +1839,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  !t4dv=t4dv + time_correction
                  time=timeobs + time_correction
                  !if (l4dvar.or.l4densvar) then
-                 !   if (t4dv<zero.OR.t4dv>winlen) cycle LOOP_K_LEVS
+                    if (t4dv<zero.OR.t4dv>winlen) cycle LOOP_K_LEVS
                  !else
                     if (real(abs(time))>real(ctwind(nc)) .or.  real(abs(time))>real(twindin)) cycle LOOP_K_LEVS
                  !endif
-                 if (t4dv<zero.OR.t4dv>winlen) cycle loop_readsb ! outside time window
               end if
 
 !             If needed, extract drift information.   
@@ -1870,19 +1868,17 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
  
 !                Check to see if the time is outside range
                  !if (l4dvar.or.l4densvar) then
-                 !   t4dv=toff+time_drift
-                 !   if (t4dv<zero .or. t4dv>winlen) then
-                 !      t4dv=toff+timex
-                 !      if (t4dv<zero .or. t4dv>winlen) CYCLE LOOP_K_LEVS
-                 !   end if
+                     t4dv=toff+time_drift
+                     if (t4dv<zero .or. t4dv>winlen) then
+                        t4dv=toff+timex
+                        if (t4dv<zero .or. t4dv>winlen) CYCLE LOOP_K_LEVS
+                     end if
                  !else
                     if(abs(time_drift) > ctwind(nc) .or. abs(time_drift) > twindin)then
                        time_drift=timex
                        if(abs(timex) > ctwind(nc) .or. abs(timex) > twindin) CYCLE LOOP_K_LEVS
                     end if
-                    t4dv = toff + time_drift
                  !endif
-                 if (t4dv<zero.OR.t4dv>winlen) cycle loop_readsb ! outside time window
                  dlat_earth_deg = drfdat(2,k)
                  dlon_earth_deg = drfdat(1,k)
                  dlat_earth = drfdat(2,k) * deg2rad
