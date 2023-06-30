@@ -559,6 +559,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   ntx(ntread)=0
   ntxall=0
   var_jb=zero
+  toff = winlen/2.
   do nc=1,nconvtype
      if(trim(ioctype(nc)) == trim(obstype))then
        if(.not.use_prepb_satwnd .and. (trim(ioctype(nc)) == 'uv' .or. trim(ioctype(nc)) == 'wspd10m' .or. & 
@@ -632,7 +633,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
      end if
 
 !    Time offset
-     if(nmsg == 0) call time_4dvar(idate,toff)
+     !if(nmsg == 0) call time_4dvar(idate,toff)
      nmsg=nmsg+1
      if (nmsg>nmsgmax) then
         write(6,*)'READ_PREPBUFR: messages exceed maximum ',nmsgmax
@@ -1088,7 +1089,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               zeps=1.0e-8_r_kind
               if (t4dv<zero  .and.t4dv>      -zeps) t4dv=zero
               if (t4dv>winlen.and.t4dv<winlen+zeps) t4dv=winlen
-              !t4dv=t4dv + time_correction
+              t4dv=t4dv + time_correction
               time=timeobs + time_correction
            end if
            if(use_prepb_satwnd .and. (kx >= 240 .and. kx <= 260)) iobsub = hdr(7)
@@ -1836,7 +1837,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  zeps=1.0e-8_r_kind
                  if (t4dv<zero  .and.t4dv>      -zeps) t4dv=zero
                  if (t4dv>winlen.and.t4dv<winlen+zeps) t4dv=winlen
-                 !t4dv=t4dv + time_correction
+                 t4dv=t4dv + time_correction
                  time=timeobs + time_correction
                  !if (l4dvar.or.l4densvar) then
                     if (t4dv<zero.OR.t4dv>winlen) cycle LOOP_K_LEVS
