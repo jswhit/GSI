@@ -294,12 +294,14 @@ logical, intent(in) :: no_inflate_flag
 real(r_double)  :: t1,t2
 integer(i_kind) :: nb, nvar,ne,nn
 integer(i_kind) :: q_ind, ierr
-real(r_single), allocatable, dimension(:,:) :: grdin_mean_tmp
+real(r_single), allocatable, dimension(:,:) :: grdin_mean_tmp,tmp2d
+real(r_single), allocatable, dimension(:) :: work1d
 real(r_single), allocatable, dimension(:,:,:,:) :: grdin_mean
 
 if (nproc <= ntasks_io-1) then
 
    allocate(grdin_mean_tmp(npts,ncdim))
+   allocate(work1d(npts))
    if (nproc == 0) then
      allocate(grdin_mean(npts,ncdim,nbackgrounds,1))
      grdin_mean = 0_r_single
@@ -334,6 +336,13 @@ if (nproc <= ntasks_io-1) then
             write(6,100) trim(cvars3d(nvar)),   &
                 minval(grdin_mean(:,clevels(nvar-1)+1:clevels(nvar),nb,1)),     &
                 maxval(grdin_mean(:,clevels(nvar-1)+1:clevels(nvar),nb,1))
+            if (trim(adjustl(cvars3d(nvar))) .eq. 'dprs') then
+                !do ne=1,nlevs
+                !   print *,'min/max dprs increment level ',ne,' = ',minval(grdin_mean(:,clevels(nvar-1)+ne,nb,1)),maxval(grdin_mean(:,clevels(nvar-1)+ne,nb,1))
+                !enddo
+                work1d=sum(grdin_mean(:,clevels(nvar-1)+1:clevels(nvar-1)+nlevs,nb,1),2)
+                print *,'min/max inferred ps increment',0.01*minval(work1d),0.01*maxval(work1d)
+            endif
          enddo
          do nvar=1,nc2d
             write(6,100) trim(cvars2d(nvar)),   &
@@ -343,7 +352,7 @@ if (nproc <= ntasks_io-1) then
       endif
    enddo
 100 format('ens. mean anal. increment min/max  ',a,2x,g19.12,2x,g19.12)
-   deallocate(grdin_mean_tmp)
+   deallocate(grdin_mean_tmp,work1d)
 
    q_ind = getindex(cvars3d, 'q')
    if (pseudo_rh .and. q_ind > 0) then

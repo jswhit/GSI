@@ -569,7 +569,7 @@
   type(nemsio_gfile) :: gfilesfc
 
   integer(i_kind) :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
-  integer(i_kind) :: qr_ind, qs_ind, qg_ind
+  integer(i_kind) :: qr_ind, qs_ind, qg_ind, dprs_ind, delz_ind
   integer(i_kind) :: tsen_ind, ql_ind, qi_ind, prse_ind
   integer(i_kind) :: ps_ind, pst_ind, sst_ind
   integer(i_kind) :: tmp2m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind
@@ -658,6 +658,8 @@
   oz_ind  = getindex(vars3d, 'oz')  ! Oz (3D)
   cw_ind  = getindex(vars3d, 'cw')  ! CW (3D)
   tsen_ind = getindex(vars3d, 'tsen') !sensible T (3D)
+  dprs_ind = getindex(vars3d, 'dprs') !pressure thickness (3D)
+  delz_ind = getindex(vars3d, 'delz') !height thickness (3D)
   ql_ind  = getindex(vars3d, 'ql')  ! QL (3D)
   qi_ind  = getindex(vars3d, 'qi')  ! QI (3D)
   prse_ind = getindex(vars3d, 'prse')
@@ -970,6 +972,28 @@
         if (tv_ind > 0)   grdin(:,levels(tv_ind-1)+k,nb,ne) = tv(:,k)
         if (q_ind > 0)    grdin(:,levels( q_ind-1)+k,nb,ne) =  q(:,k)
      enddo
+     if (dprs_ind > 0) then
+        call read_vardata(dset, 'dpres', ug3d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading dprs'
+           call stop2(26)
+        endif
+        do k=1,nlevs
+           ug = reshape(ug3d(:,:,nlevs-k+1),(/nlons*nlats/))
+           call copytogrdin(ug,grdin(:,levels(dprs_ind-1)+k,nb,ne))
+        enddo
+     endif
+     if (delz_ind > 0) then
+        call read_vardata(dset, 'delz', ug3d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading delz'
+           call stop2(26)
+        endif
+        do k=1,nlevs
+           ug = reshape(ug3d(:,:,nlevs-k+1),(/nlons*nlats/))
+           call copytogrdin(ug,grdin(:,levels(delz_ind-1)+k,nb,ne))
+        enddo
+     endif
      if (oz_ind > 0) then
         call read_vardata(dset, 'o3mr', ug3d,errcode=iret)
         if (iret /= 0) then
@@ -2133,7 +2157,7 @@
   type(nemsio_gfile) :: gfilein,gfileout
 
   integer :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
-  integer :: ps_ind, pst_ind, nbits
+  integer :: ps_ind, pst_ind, nbits, dprs_ind, delz_ind
   integer :: ql_ind, qi_ind, qr_ind, qs_ind, qg_ind
 
   integer k,krev,nt,ierr,iunitsig,nb,i,ne,nanal
@@ -2273,6 +2297,8 @@
   v_ind   = getindex(vars3d, 'v')   ! U and V (3D)
   tv_ind  = getindex(vars3d, 'tv')  ! Tv (3D)
   q_ind   = getindex(vars3d, 'q')   ! Q (3D)
+  dprs_ind  = getindex(vars3d, 'dprs')  ! pressure thickness (3D)
+  delz_ind  = getindex(vars3d, 'delz')  ! height thickness (3D)
   ps_ind  = getindex(vars2d, 'ps')  ! Ps (2D)
   oz_ind  = getindex(vars3d, 'oz')  ! Oz (3D)
   cw_ind  = getindex(vars3d, 'cw')  ! CW (3D)
@@ -2529,9 +2555,20 @@
      if (ps_ind > 0) then
        call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),ug)
      endif
-     ! add increment to background.
-     psg = psfg + ug ! analysis pressure in mb.
-     values_2d = 100.*reshape(psg,(/nlons,nlats/))
+     if (has_var(dsfg,'dpres') .and. dprs_ind > 0) then
+        ! compute ps increment from vertical sum of dpres increment
+        ug = 0_r_kind
+        do k=1,nlevs
+           call copyfromgrdin(grdin(:,levels(dprs_ind-1)+k,nb,ne),vg)
+           ug = ug + vg
+        enddo
+        !print *,'inferred ps increment min/max',nanal,minval(ug)/100.,maxval(ug)/100.
+        psg = 100.*psfg + ug ! analysis pressure in Pa.
+        values_2d = reshape(psg,(/nlons,nlats/))
+     else  
+        psg = psfg + ug ! analysis pressure in mb.
+        values_2d = 100.*reshape(psg,(/nlons,nlats/))
+     endif
      call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
      if (iret /= 0) then
         print *,'error writing pressfc'
@@ -2541,12 +2578,21 @@
      if (has_var(dsfg,'dpres')) then
         call read_vardata(dsfg,'dpres',ug3d)
         allocate(vg3d(nlons,nlats,nlevs))
-        ! infer dpres increment from ps increment
-        do k=1,nlevs
-           vg = ug*(bk(k)-bk(k+1)) ! ug is ps increment
-           vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) +&
-           100_r_kind*reshape(vg,(/nlons,nlats/))
-        enddo
+        if (dprs_ind < 0) then
+           ! infer dpres increment from ps increment
+           do k=1,nlevs
+              vg = ug*(bk(k)-bk(k+1)) ! ug is ps increment
+              vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) +&
+              100_r_kind*reshape(vg,(/nlons,nlats/))
+           enddo
+        else
+           do k=1,nlevs
+              vg = 0_r_kind
+              call copyfromgrdin(grdin(:,levels(dprs_ind-1)+k,nb,ne),vg)
+              vg3d(:,:,nlevs-k+1) = ug3d(:,:,nlevs-k+1) + &
+              reshape(vg,(/nlons,nlats/))
+           enddo
+        endif
         if (has_attr(dsfg, 'nbits', 'dpres') .and. .not. nocompress) then
           call read_attribute(dsfg, 'nbits', nbits, 'dpres')
           ug3d = vg3d
@@ -3142,29 +3188,37 @@
 
      ! write analysis delz
      if (has_var(dsfg,'delz')) then
-        allocate(delzb(nlons*nlats))
         call read_vardata(dsfg,'delz',values_3d)
-        vg = 0_r_kind
-        if (ps_ind > 0) then
-           call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),vg)
+        if (delz_ind < 0) then
+            allocate(delzb(nlons*nlats))
+            vg = 0_r_kind
+            if (ps_ind > 0) then
+               call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),vg)
+            endif
+            vg = values_1d + vg*100_r_kind ! analysis ps (values_1d is background ps)
+            do k=1,nlevs
+               krev = nlevs-k+1  ! k=1 is model top
+               ug=(rd/grav)*reshape(tv_anal(:,:,k),(/nlons*nlats/))
+               ! ps in Pa here, need to multiply ak by 100.
+               ! ug is analysis delz, calculate so it is negative
+               ! (note that ak,bk are already reversed to go from bottom to top)
+               ug=ug*log((100_r_kind*ak(krev+1)+bk(krev+1)*vg)/(100_r_kind*ak(krev)+bk(krev)*vg))
+               ! ug is hydrostatic analysis delz inferred from analysis ps,Tv
+               ! delzb is hydrostatic background delz inferred from background ps,Tv
+               ! calculate so it is negative
+               delzb=(rd/grav)*reshape(tv_bg(:,:,k),(/nlons*nlats/))
+               delzb=delzb*log((100_r_kind*ak(krev+1)+bk(krev+1)*values_1d)/(100_r_kind*ak(krev)+bk(krev)*values_1d))
+               ug3d(:,:,k)=values_3d(:,:,k) +&
+               reshape(ug-delzb,(/nlons,nlats/))
+            enddo
+        else
+           do k=1,nlevs
+              vg = 0_r_kind
+              call copyfromgrdin(grdin(:,levels(delz_ind-1)+k,nb,ne),vg)
+              ug3d(:,:,nlevs-k+1) = values_3d(:,:,nlevs-k+1) + &
+              reshape(vg,(/nlons,nlats/))
+           enddo
         endif
-        vg = values_1d + vg*100_r_kind ! analysis ps (values_1d is background ps)
-        do k=1,nlevs
-           krev = nlevs-k+1  ! k=1 is model top
-           ug=(rd/grav)*reshape(tv_anal(:,:,k),(/nlons*nlats/))
-           ! ps in Pa here, need to multiply ak by 100.
-           ! ug is analysis delz, calculate so it is negative
-           ! (note that ak,bk are already reversed to go from bottom to top)
-           ug=ug*log((100_r_kind*ak(krev+1)+bk(krev+1)*vg)/(100_r_kind*ak(krev)+bk(krev)*vg))
-           ! ug is hydrostatic analysis delz inferred from analysis ps,Tv
-           ! delzb is hydrostatic background delz inferred from background ps,Tv
-           ! calculate so it is negative
-           delzb=(rd/grav)*reshape(tv_bg(:,:,k),(/nlons*nlats/))
-           delzb=delzb*log((100_r_kind*ak(krev+1)+bk(krev+1)*values_1d)/(100_r_kind*ak(krev)+bk(krev)*values_1d))
-           ug3d(:,:,k)=values_3d(:,:,k) +&
-           reshape(ug-delzb,(/nlons,nlats/))
-        enddo
-        !  minval(ug3d),maxval(ug3d)
         if (has_attr(dsfg, 'nbits', 'delz') .and. .not. nocompress) then
           call read_attribute(dsfg, 'nbits', nbits, 'delz')
           values_3d = ug3d

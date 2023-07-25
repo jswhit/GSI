@@ -34,7 +34,7 @@ module readconvobs
 use kinds, only: r_kind,i_kind,r_single,r_double
 use constants, only: one,zero,deg2rad
 use params, only: npefiles, netcdf_diag, modelspace_vloc, &
-                  l_use_enkf_directZDA
+                  l_use_enkf_directZDA, nlevs
 implicit none
 
 private
@@ -453,9 +453,12 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
                             x_errorig, x_type, x_used, id, nanal, nmem)
   use sparsearr, only: sparr, sparr2, new, delete, assignment(=), init_raggedarr, raggedarr
   use params, only: nanals, lobsdiag_forenkf, neigv, vlocal_evecs
-  use statevec, only: state_d
+  use statevec, only: state_d, svars3d
+  use mpeu_util, only: getindex
   use mpisetup, only: nproc, mpi_wtime
-  use observer_enkf, only: calc_linhx,calc_linhx_modens,setup_linhx
+  use observer_enkf, only: &
+   calc_linhx,calc_linhx_modens,setup_linhx,calc_linhx_psfromdelp, &
+   calc_linhx_modens_psfromdelp
   use nc_diag_read_mod, only: nc_diag_read_get_var
   use nc_diag_read_mod, only: nc_diag_read_get_dim, nc_diag_read_get_global_attr
   use nc_diag_read_mod, only: nc_diag_read_init, nc_diag_read_close
@@ -495,7 +498,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
   character(len=3) :: obtype
 
   integer(i_kind) :: iunit, iunit2, ipe, itype
-  integer(i_kind) :: nobs, nobdiag, i, nob, nnz, nind
+  integer(i_kind) :: nobs, nobdiag, i, nob, nnz, nind, dprs_ind
   real(r_kind) :: errorlimit,errorlimit2,error,errororig
   real(r_kind) :: obmax, pres
   real(r_kind) :: errorlimit2_obs,errorlimit2_bnd
@@ -513,6 +516,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
   integer(i_kind), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_stind, v_Observation_Operator_Jacobian_stind
   integer(i_kind), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_endind, v_Observation_Operator_Jacobian_endind
   real(r_single), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_val, v_Observation_Operator_Jacobian_val
+  real(r_single), dimension(nlevs) :: delp
 
   integer(i_kind) :: ix, iy, it, ixp, iyp, itp, nprof
   real(r_kind) :: delx, dely, delxp, delyp, delt, deltp
@@ -662,6 +666,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
 
         errorlimit2=errorlimit2_obs
 
+        dprs_ind = getindex(svars3d,'dprs')
         do i = 1, nobs
            nobdiag = nobdiag + 1
            ! special handling for error limits for GPS bend angle
@@ -765,12 +770,28 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
                     nprof = nprof + 1
                  endif
                  call init_raggedarr(hxpert, dhx_dx%nnz)
-                 call calc_linhx(hx_mean(nob), state_d(:,:,:,nmem),&
-                                 dhx_dx, hxpert, hx(nob),          &
-                                 ix, delx, ixp, delxp, iy, dely,   &
-                                 iyp, delyp, it, delt, itp, deltp)
+                 if ((obtype == ' ps' .or. obtype == 'tcp') .and. dprs_ind > 0) then
+                    call calc_linhx_psfromdelp(hx_mean(nob), state_d(:,:,:,nmem),&
+                                    dhx_dx, hxpert, hx(nob),          &
+                                    ix, delx, ixp, delxp, iy, dely,   &
+                                    iyp, delyp, it, delt, itp, deltp, delp)
+                    ! compute modulated ensemble in obs space using delp
+                    ! perturbation profile.
+                    if (neigv>0) call calc_linhx_modens_psfromdelp(hx_mean(nob),dhx_dx,hxpert,delp,hx_modens(:,nob),vlocal_evecs)
+                 else
+                    call calc_linhx(hx_mean(nob), state_d(:,:,:,nmem),&
+                                    dhx_dx, hxpert, hx(nob),          &
+                                    ix, delx, ixp, delxp, iy, dely,   &
+                                    iyp, delyp, it, delt, itp, deltp)
+                    ! compute modulated ensemble in obs space
+                    if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
+                 endif
+                 !call calc_linhx(hx_mean(nob), state_d(:,:,:,nmem),&
+                 !                dhx_dx, hxpert, hx(nob),          &
+                 !                ix, delx, ixp, delxp, iy, dely,   &
+                 !                iyp, delyp, it, delt, itp, deltp)
                  ! compute modulated ensemble in obs space
-                 if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
+                 !if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
 
                  t2 = mpi_wtime()
                  tsum = tsum + t2-t1
