@@ -62,7 +62,8 @@ subroutine gesinfo
 !                                      nfsecondn  FCST Secs (i_kind) numerator
 !                                      nfsecondd  FCST Secs (i_kind) denominator
 !
-!       %fhour = float(nfhour) + float(nfminute)/r60 + float(nfsecondn)/float(nfsecondd)/r3600
+!       %fhour = real(nfhour,r_kind) + real(nfminute,r_kind)/r60 + &
+!                real(nfsecondn,r_kind)/real(nfsecondd,r_kind)/r3600
 !
 ! attributes:
 !   language: f90
@@ -312,8 +313,8 @@ subroutine gesinfo
               nfhour, nfminute, nfsecondn, nfsecondd
            call stop2(99)
         endif
-        gfshead%fhour = float(nfhour) + float(nfminute)/r60 + &
-                        float(nfsecondn)/float(nfsecondd)/r3600
+        gfshead%fhour = real(nfhour,r_kind) + real(nfminute,r_kind)/r60 + &
+                        real(nfsecondn,r_kind)/real(nfsecondd,r_kind)/r3600
 
         gfshead%idate(1) = idate(4)  !hour
         gfshead%idate(3) = idate(3)  !day
@@ -552,7 +553,7 @@ subroutine gesinfo
   ida(:)=0
   jda(:)=0
   fha(:)=zero
-  !fha(2)=-float(int(min_offset/60))
+  !fha(2)=-float(int(min_offset/60),r_kind)
   !fha(3)=-(min_offset+fha(2)*r60)
   fha(2)=-float(nhr_assimilation)/2.
   fha(3)=-(float(nhr_assimilation)*r60/2.+fha(2)*r60)
@@ -588,7 +589,7 @@ subroutine gesinfo
 ! Get time offset
   call time_4dvar(ianldate,time_offset)
 #ifdef RR_CLOUDANALYSIS
-  fha(2)=float(int(min_offset/60))
+  fha(2)=real(int(min_offset/60),r_kind)
   fha(3)=(min_offset-fha(2)*r60)
   time_offset=time_offset+fha(3)/r60
 #endif
