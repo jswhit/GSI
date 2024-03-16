@@ -15,6 +15,13 @@ elif [[ $MACHINE_ID = hera* ]] ; then
     fi
     module purge
 
+elif [[ $MACHINE_ID = hercules* ]] ; then
+    # We are on Hercules
+    if ( ! eval module help > /dev/null 2>&1 ) ; then
+        source /apps/other/lmod/lmod/init/bash
+    fi
+    module purge
+
 elif [[ $MACHINE_ID = orion* ]] ; then
     # We are on Orion
     if ( ! eval module help > /dev/null 2>&1 ) ; then
@@ -32,13 +39,6 @@ elif [[ $MACHINE_ID = s4* ]] ; then
 elif [[ $MACHINE_ID = wcoss2 ]]; then
     # We are on WCOSS2
     module reset
-
-elif [[ $MACHINE_ID = cheyenne* ]] ; then
-    # We are on NCAR Cheyenne
-    if ( ! eval module help > /dev/null 2>&1 ) ; then
-        source /glade/u/apps/ch/modulefiles/default/localinit/localinit.sh
-    fi
-    module purge
 
 elif [[ $MACHINE_ID = stampede* ]] ; then
     # We are on TACC Stampede

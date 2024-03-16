@@ -1882,8 +1882,8 @@ end subroutine normal_new_factorization_rf_y
                 iaens=ensgrp2aensgrp(ig,ic2+nc3d,ibin)
                 if(iaens>0) then
                    do n=1,n_ens
-                      do j=1,jm
-                         do k=1,km_tmp
+                      do k=1,km_tmp
+                         do j=1,jm
                             do i=1,im
                                cvec%r2(ipic)%q(i,j)=cvec%r2(ipic)%q(i,j) &
                                     +a_en(iaens,n)%r3(ipx)%q(i,j,k)*en_perts(n,ig,ibin)%r2(ipic)%qr4(i,j)*pwgt(i,j,k)
@@ -4001,7 +4001,8 @@ subroutine hybens_grid_setup
 !   2010-02-20  parrish, adapt for dual resolution
 !   2011-01-30  parrish, fix so regional application depends only on parameters regional
 !                  and dual_res.  Rename subroutine get_regional_gefs_grid to get_regional_dual_res_grid.
-!
+! 
+!   2022-03-01  X.Lu & X.Wang - add vars for hafs dual ens.  POC: xuguang.wang@ou.edu
 !   input argument list:
 !
 !   output argument list:
@@ -4027,6 +4028,8 @@ subroutine hybens_grid_setup
   use control_vectors, only: cvars3d,nc2d,nc3d
   use gridmod, only: region_lat,region_lon,region_dx,region_dy
   use hybrid_ensemble_parameters, only:nsclgrp,spc_multwgt,spcwgt_params,global_spectral_filter_sd
+  use hybrid_ensemble_parameters, only:regional_ensemble_option
+  use gsi_rfv3io_mod,only:gsi_rfv3io_get_ens_grid_specs
 
   implicit none
 
@@ -4035,6 +4038,8 @@ subroutine hybens_grid_setup
   logical,allocatable::vector(:)
   real(r_kind) eps,r_e
   real(r_kind) rlon_a(nlon),rlat_a(nlat),rlon_e(nlon),rlat_e(nlat)
+  character(:),allocatable:: fv3_ens_spec_grid_filename
+  integer :: ierr
 
   nord_e2a=4       !   soon, move this to hybrid_ensemble_parameters
 
@@ -4078,8 +4083,8 @@ subroutine hybens_grid_setup
         region_lat_ens=region_lat
      end if
   end if
-                 if(mype==0) write(6,*)' dual_res,nlat,nlon,nlat_ens,nlon_ens,r_e,eps=',&
-                                                     dual_res,nlat,nlon,nlat_ens,nlon_ens,r_e,eps
+  if(mype==0) write(6,*)' dual_res,nlat,nlon,nlat_ens,nlon_ens,r_e,eps=',&
+                               dual_res,nlat,nlon,nlat_ens,nlon_ens,r_e,eps
 
   if(nlon_ens<=0 .or. nlat_ens<=0) then
      nlon_ens=nlon ; nlat_ens=nlat
@@ -4121,6 +4126,10 @@ subroutine hybens_grid_setup
   else
      if(dual_res) then
         call get_region_dx_dy_ens(region_dx_ens,region_dy_ens)
+        if(regional_ensemble_option == 5) then
+           fv3_ens_spec_grid_filename="fv3_ens_grid_spec"
+           call gsi_rfv3io_get_ens_grid_specs(fv3_ens_spec_grid_filename,ierr)
+        endif
      else
         region_dx_ens=region_dx
         region_dy_ens=region_dy
@@ -4207,8 +4216,7 @@ subroutine hybens_localization_setup
    real(r_kind),allocatable:: s_ens_h_gu_x(:,:),s_ens_h_gu_y(:,:)
    logical :: l_read_success
    type(gsi_bundle) :: a_en(n_ens)
-   type(gsi_bundle) :: en_pertstmp(n_ens,ntlevs_ens)
-   type(gsi_bundle) :: en_pertstmp1(n_ens,ntlevs_ens)
+   type(gsi_bundle),allocatable :: en_pertstmp(:,:),en_pertstmp1(:,:)
    type(gsi_grid)  :: grid_ens
    real(r_kind), pointer :: values(:) => NULL()
    integer(i_kind) :: iscl, iv, smooth_scales_num
@@ -4272,9 +4280,8 @@ subroutine hybens_localization_setup
          vvlocal = .true.
          nz = msig
          kl = grd_loc%kend_alloc-grd_loc%kbegin_loc+1
-         if(.not.allocated(s_ens_h_gu_x)) allocate(s_ens_h_gu_x(grd_loc%nsig*n_ens,naensloc))
-         if(.not.allocated(s_ens_h_gu_y)) allocate(s_ens_h_gu_y(grd_loc%nsig*n_ens,naensloc))
       endif
+
 
    endif ! if ( readin_localization .or. readin_beta )
 
@@ -4303,8 +4310,6 @@ subroutine hybens_localization_setup
    if ( .not. readin_localization ) then ! assign all levels to same value, s_ens_h, s_ens_v
       nz = 1
       kl = 1
-      if(.not.allocated(s_ens_h_gu_x)) allocate(s_ens_h_gu_x(1,naensloc))
-      if(.not.allocated(s_ens_h_gu_y)) allocate(s_ens_h_gu_y(1,naensloc))
       do ig=1,naensloc
          s_ens_hv(:,ig) = s_ens_h(ig)
          s_ens_vv(:,ig) = s_ens_v(ig)
@@ -4318,6 +4323,8 @@ subroutine hybens_localization_setup
 
    if ( regional ) then ! convert s_ens_h from km to grid units.
       if ( vvlocal ) then
+         allocate(s_ens_h_gu_x(grd_loc%nsig*n_ens,naensloc))
+         allocate(s_ens_h_gu_y(grd_loc%nsig*n_ens,naensloc))
          call convert_km_to_grid_units(s_ens_h_gu_x(1:nz,:),s_ens_h_gu_y(1:nz,:),nz)
          do n=2,n_ens
             nk=(n-1)*nz
@@ -4329,12 +4336,16 @@ subroutine hybens_localization_setup
          call init_rf_x(s_ens_h_gu_x(grd_loc%kbegin_loc:grd_loc%kend_alloc,:),kl)
          call init_rf_y(s_ens_h_gu_y(grd_loc%kbegin_loc:grd_loc%kend_alloc,:),kl)
       else
+         allocate(s_ens_h_gu_x(1,naensloc))
+         allocate(s_ens_h_gu_y(1,naensloc))
          call convert_km_to_grid_units(s_ens_h_gu_x,s_ens_h_gu_y,nz)
          call init_rf_x(s_ens_h_gu_x,kl)
          call init_rf_y(s_ens_h_gu_y,kl)
       endif
       call normal_new_factorization_rf_x
       call normal_new_factorization_rf_y
+      deallocate(s_ens_h_gu_x)
+      deallocate(s_ens_h_gu_y)
    else
       call init_sf_xy(jcap_ens)
    endif
@@ -4406,6 +4417,8 @@ subroutine hybens_localization_setup
          else ! assign_vdl_nml
             smooth_scales_num = naensloc - naensgrp
             ngvarloc = 1 ! forced to 1 in this option
+            allocate(en_pertstmp(n_ens,ntlevs_ens))
+            allocate(en_pertstmp1(n_ens,ntlevs_ens))
             do n = 1, n_ens
               do m = 1, ntlevs_ens
                  call gsi_bundlecreate(en_pertstmp(n,m),grid_ens,'ensemble2',istatus,names2d=cvars2d,names3d=cvars3d,bundle_kind=r_single)
@@ -4496,6 +4509,7 @@ subroutine hybens_localization_setup
                  call gsi_bundledestroy(en_pertstmp1(n,m),istatus)
               end do
             end do
+            deallocate(en_pertstmp,en_pertstmp1)
           end if
           deallocate(values)
        endif
@@ -5436,6 +5450,7 @@ subroutine acceptable_for_essl_fft(nin,nout)
       nout=n_acceptable_table(i)
       if(nout.ge.nin) exit
     enddo
+    deallocate(n_acceptable_table)
     return
 
 end subroutine acceptable_for_essl_fft
