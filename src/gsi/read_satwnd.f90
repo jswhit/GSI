@@ -793,7 +793,6 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            !else
               if (abs(tdiff)>twind) cycle loop_readsb 
            !endif
-           iosub=0
 
            ! reject data with bad lat/lon
            if(abs(hdrdat(2)) >r90 ) cycle loop_readsb 
