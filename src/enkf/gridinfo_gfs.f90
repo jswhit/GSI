@@ -65,9 +65,9 @@ real(r_single),public, allocatable, dimension(:,:) :: logp
 integer,public :: npts
 integer,public :: ntrunc
 ! supported variable names in anavinfo
-character(len=max_varname_length),public, dimension(15) :: vars3d_supported = (/'u   ', 'v   ', 'tv  ', 'dprs', 'delz', 'q   ', 'oz  ', 'cw  ', 'tsen', 'prse', &
+character(len=max_varname_length),public, dimension(16) :: vars3d_supported = (/'u   ', 'v   ', 'z   ', 'tv  ', 'dprs', 'delz', 'q   ', 'oz  ', 'cw  ', 'tsen', 'prse', &
                                                                                 'ql  ', 'qi  ', 'qr  ', 'qs  ', 'qg  '/) 
-character(len=max_varname_length),public, dimension(13)  :: vars2d_supported = (/'ps ', 'pst', 'sst', 't2m', 'q2m', 'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
+character(len=max_varname_length),public, dimension(16)  :: vars2d_supported = (/'ps ', 'mslp', 'pst', 'sst', 't2m', 'u10m', 'v10m', 'q2m', 'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
 character(len=max_varname_length),public, dimension(8)  :: vars2d_landonly = (/'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
 ! supported variable names in anavinfo
 contains
@@ -81,7 +81,7 @@ use nemsio_module, only: nemsio_gfile,nemsio_open,nemsio_close,&
                          nemsio_getfilehead,nemsio_getheadvar,&
                          nemsio_readrecv,nemsio_init, nemsio_realkind
 use module_ncio, only: Dataset, Variable, Dimension, open_dataset,&
-                       read_attribute, close_dataset, get_dim, read_vardata 
+                       read_attribute, close_dataset, get_dim, read_vardata, has_var,has_attr
 implicit none
 
 type(Dataset) :: dset
@@ -92,7 +92,7 @@ logical, intent(in)            :: reducedgrid
 integer(i_kind) nlevsin, ierr, iunit, k, nn, idvc 
 character(len=500) filename
 integer(i_kind) iret,i,j,nlonsin,nlatsin
-real(r_kind), allocatable, dimension(:) :: ak,bk,spressmn,tmpspec
+real(r_kind), allocatable, dimension(:) :: ak,bk,spressmn,tmpspec,values_1d
 real(r_kind), allocatable, dimension(:,:) :: pressimn,presslmn,values_2d
 real(r_single),allocatable,dimension(:,:,:) :: nems_vcoord
 real(r_kind) kap,kapr,kap1
@@ -225,22 +225,47 @@ if (nproc .eq. 0) then
       call nemsio_close(gfile, iret=iret)
       ptop = ak(nlevs+1)
    else if (use_gfs_ncio) then
-      call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
-      if (iret /= 0) then
-         print *,'error reading ps in gridinfo_gfs'
-         call stop2(11)
+      if (has_var(dset, 'pressfc')) then
+         call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
+      else
+         print *,'error reading ps in gridinfo_gfs, read mslp instead...'
+         call read_vardata(dset, 'mslp', values_2d,errcode=iret)
+         if (iret/=0) then
+             print *,'error reading mslp in gridinfo_gfs, stopping...'
+             call stop2(23)
+         endif
       endif
-      ! convert to 1d array, units to millibars, flip so lats go N to S.
       spressmn = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
-      call read_attribute(dset, 'ak', ak)
-      call read_attribute(dset, 'bk', bk)
-      call close_dataset(dset)
-      ! pressure at interfaces
-      do k=1,nlevs+1
-         pressimn(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*spressmn(:)
-      enddo
-      ptop = 0.01_r_kind*ak(1)
+      print *,'ensemble mean first guess surface pressure/mslp:'
+      print *,minval(spressmn),maxval(spressmn)
       deallocate(values_2d)
+      if (has_attr(dset,'ak')) then
+         call read_attribute(dset, 'ak', ak)
+         call read_attribute(dset, 'bk', bk)
+         call close_dataset(dset)
+         ! pressure at interfaces
+         do k=1,nlevs+1
+            pressimn(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*spressmn(:)
+         enddo
+         ptop = 0.01_r_kind*ak(1)
+         do k=1,nlevs
+           ! layer pressure from Phillips vertical interpolation.
+           presslmn(:,k) = ((pressimn(:,k)**kap1-pressimn(:,k+1)**kap1)/&
+                            (kap1*(pressimn(:,k)-pressimn(:,k+1))))**kapr
+         end do
+      else
+         print *,'error reading ak in gridinfo_gfs, use pfull instead'
+         call read_vardata(dset, 'pfull', values_1d, errcode=iret)
+         if (iret/=0) then
+             print *,'error reading pfull in gridinfo_gfs, stopping...'
+             call stop2(23)
+         endif
+         ptop = values_1d(1)
+         do k=1,nlevs
+           presslmn(:,k) = values_1d(nlevs-k+1)
+         enddo
+         call close_dataset(dset)
+       endif
    else
 ! get pressure from ensemble mean,
 ! distribute to all processors.
@@ -278,6 +303,13 @@ if (nproc .eq. 0) then
       do k=1,nlevs+1
          pressimn(:,k) = ak(k)+bk(k)*spressmn(:)
       enddo
+      do k=1,nlevs
+        ! layer pressure from Phillips vertical interpolation.
+        presslmn(:,k) = ((pressimn(:,k)**kap1-pressimn(:,k+1)**kap1)/&
+                         (kap1*(pressimn(:,k)-pressimn(:,k+1))))**kapr
+      end do
+      print *,'ensemble mean first guess surface pressure:'
+      print *,minval(spressmn),maxval(spressmn)
       call sigio_axdata(sigdata,iret)
       ptop = ak(nlevs+1)
    endif
@@ -305,18 +337,11 @@ if (nproc .eq. 0) then
       enddo
    endif
    do k=1,nlevs
-     ! layer pressure from Phillips vertical interpolation.
-     presslmn(:,k) = ((pressimn(:,k)**kap1-pressimn(:,k+1)**kap1)/&
-                      (kap1*(pressimn(:,k)-pressimn(:,k+1))))**kapr
-   end do
-   print *,'ensemble mean first guess surface pressure:'
-   print *,minval(spressmn),maxval(spressmn)
-   !do k=1,nlevs
-   !   print *,'min/max ens mean press level',&
-   !   k,'=',minval(presslmn(:,k)),maxval(presslmn(:,k))
+      print *,'min/max ens mean press level',&
+      k,'=',minval(presslmn(:,k)),maxval(presslmn(:,k))
    !   print *,'min/max ens mean press interface',&
    !   k,'=',minval(pressimn(:,k)),maxval(pressimn(:,k))
-   !enddo
+   enddo
    ! logp holds log(pressure) or pseudo-height on grid, for each level/variable.
    do k=1,nlevs
       ! all variables to be updated are on mid-layers, not layer interfaces.

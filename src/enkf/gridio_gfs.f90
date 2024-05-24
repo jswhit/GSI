@@ -530,7 +530,7 @@
   use nemsio_module, only: nemsio_gfile,nemsio_open,nemsio_close,&
                            nemsio_getfilehead,nemsio_getheadvar,nemsio_realkind,nemsio_charkind,&
                            nemsio_readrecv,nemsio_init,nemsio_setheadvar,nemsio_writerecv
-  use module_ncio, only: Dataset, Variable, Dimension, open_dataset,&
+  use module_ncio, only: Dataset, Variable, Dimension, open_dataset, has_attr, has_var,&
                          quantize_data,read_attribute, close_dataset, get_dim, read_vardata
   implicit none
 
@@ -558,7 +558,7 @@
   real(r_single), dimension(npts,nlevs)         :: tv, q, cw
   real(r_single), dimension(npts,nlevs)         :: ql, qi, qr, qs, qg
   real(r_kind), dimension(ndimspec)             :: vrtspec,divspec
-  real(r_kind), allocatable, dimension(:)       :: psg,pstend,ak,bk
+  real(r_kind), allocatable, dimension(:)       :: psg,pstend,ak,bk,values_1d,mslp
   real(r_single),allocatable,dimension(:,:,:)   :: nems_vcoord, ug3d,vg3d
   real(nemsio_realkind), dimension(nlons*nlats) :: nems_wrk,nems_wrk2
   type(sigio_head)   :: sighead
@@ -568,11 +568,11 @@
   type(Dimension) :: londim,latdim,levdim
   type(nemsio_gfile) :: gfilesfc
 
-  integer(i_kind) :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
+  integer(i_kind) :: u_ind, v_ind, z_ind, tv_ind, q_ind, oz_ind, cw_ind
   integer(i_kind) :: qr_ind, qs_ind, qg_ind, dprs_ind, delz_ind
   integer(i_kind) :: tsen_ind, ql_ind, qi_ind, prse_ind
-  integer(i_kind) :: ps_ind, pst_ind, sst_ind
-  integer(i_kind) :: tmp2m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind
+  integer(i_kind) :: ps_ind, pst_ind, sst_ind, mslp_ind
+  integer(i_kind) :: tmp2m_ind, u10m_ind, v10m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind
   integer(i_kind) :: soilt4_ind,slc1_ind, slc2_ind, slc3_ind, slc4_ind
 
   integer(i_kind) :: k,iunitsig,iret,nb,i,idvc,nlonsin,nlatsin,nlevsin,ne,nanal
@@ -585,6 +585,7 @@
 
   ! determine which files will be read in
   call set_ncio_file_flags(vars3d, n3d, vars2d, n2d, read_sfc_file, read_atm_file)
+  if (nproc .eq. 0) print *,'read_sfc_file = ',read_sfc_file
 
   ne = 0
   ensmemloop: do nanal=nanal1,nanal2
@@ -653,6 +654,7 @@
 
   u_ind   = getindex(vars3d, 'u')   !< indices in the state or control var arrays
   v_ind   = getindex(vars3d, 'v')   ! U and V (3D)
+  z_ind   = getindex(vars3d, 'z')   ! U and V (3D)
   tv_ind  = getindex(vars3d, 'tv')  ! Tv (3D)
   q_ind   = getindex(vars3d, 'q')   ! Q (3D)
   oz_ind  = getindex(vars3d, 'oz')  ! Oz (3D)
@@ -667,19 +669,20 @@
   qs_ind  = getindex(vars3d, 'qs')  ! QS (3D)
   qg_ind  = getindex(vars3d, 'qg')  ! QG (3D)
   ps_ind  = getindex(vars2d, 'ps')  ! Ps (2D)
+  mslp_ind  = getindex(vars2d, 'mslp')  ! mslp (2D)
   pst_ind = getindex(vars2d, 'pst') ! Ps tendency (2D)   // equivalent of
                                      ! old logical massbal_adjust, if non-zero
   sst_ind = getindex(vars2d, 'sst')
   use_full_hydro = ( ql_ind > 0 .and. qi_ind > 0  .and. &
                      qr_ind > 0 .and. qs_ind > 0 .and. qg_ind > 0 )
 
-!  if (nproc == 0) then
-!    print *, 'indices: '
-!    print *, 'u: ', u_ind, ', v: ', v_ind, ', tv: ', tv_ind, ', tsen: ', tsen_ind
-!    print *, 'q: ', q_ind, ', oz: ', oz_ind, ', cw: ', cw_ind, ', qi: ', qi_ind
-!    print *, 'ql: ', ql_ind, ', prse: ', prse_ind
-!    print *, 'ps: ', ps_ind, ', pst: ', pst_ind, ', sst: ', sst_ind
-!  endif
+   if (nproc == 0) then
+     print *, 'indices: '
+     print *, 'u: ', u_ind, ', v: ', v_ind, ', z: ', z_ind,', tv: ', tv_ind, ', tsen: ', tsen_ind
+     print *, 'q: ', q_ind, ', oz: ', oz_ind, ', cw: ', cw_ind, ', qi: ', qi_ind
+     print *, 'ql: ', ql_ind, ', prse: ', prse_ind
+     print *, 'ps: ', ps_ind, ', pst: ', pst_ind, ', mslp: ', mslp_ind, ', sst: ', sst_ind
+   endif
   if (read_atm_file) then
 
   if (.not. isinitialized) call init_spec_vars(nlons,nlats,ntrunc,4)
@@ -732,25 +735,47 @@
      enddo
      deallocate(ak,bk)
   else if (use_gfs_ncio) then
-     call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error reading ps'
-        call stop2(31)
+     if (mslp_ind > 0) then
+        call read_vardata(dset, 'mslp', values_2d,errcode=iret)
+        if (iret/=0) then
+            print *,'error reading mslp in gridio_gfs, stopping...'
+            call stop2(31)
+        endif
+        psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
+     else
+        call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
+        if (iret/=0) then
+            print *,'error reading pressfc in gridio_gfs, stopping...'
+            call stop2(31)
+        endif
+        psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
      endif
-     psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
-     call read_attribute(dset, 'ak', ak)
-     call read_attribute(dset, 'bk', bk)
-     if (nanal .eq. 1) then
-        print *,'time level ',nb
-        print *,'---------------'
+     if (has_attr(dset, 'ak')) then
+        call read_attribute(dset, 'ak', ak)
+        call read_attribute(dset, 'bk', bk)
+        if (nanal .eq. 1) then
+           print *,'time level ',nb
+           print *,'---------------'
+        endif
+        ! pressure at interfaces
+        do k=1,nlevs+1
+           ! k=1 in ak,bk is model top
+           pressi(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*psg
+           if (nanal .eq. 1) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
+        enddo
+        deallocate(ak,bk)
+     else
+        call read_vardata(dset, 'phalf', values_1d, errcode=iret)
+        if (iret/=0) then
+            print *,'error reading phalf in gridfo_gfs, stopping...'
+            call stop2(31)
+        endif
+        do k=1,nlevs+1
+           pressi(:,k) = values_1d(nlevs-k+2)
+           if (nanal .eq. 1) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
+        enddo
+        deallocate(values_1d,values_2d)
      endif
-     ! pressure at interfaces
-     do k=1,nlevs+1
-        ! k=1 in ak,bk is model top
-        pressi(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*psg
-        if (nanal .eq. 1) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
-     enddo
-     deallocate(ak,bk)
   else
      vrtspec = sigdata%ps
      call sptez_s(vrtspec,psg,1)
@@ -995,6 +1020,17 @@
            call copytogrdin(ug,grdin(:,levels(delz_ind-1)+k,nb,ne))
         enddo
      endif
+     if (z_ind > 0) then
+        call read_vardata(dset, 'z', ug3d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading z'
+           call stop2(26)
+        endif
+        do k=1,nlevs
+           ug = reshape(ug3d(:,:,nlevs-k+1),(/nlons*nlats/))
+           call copytogrdin(ug,grdin(:,levels(z_ind-1)+k,nb,ne))
+        enddo
+     endif
      if (oz_ind > 0) then
         call read_vardata(dset, 'o3mr', ug3d,errcode=iret)
         if (iret /= 0) then
@@ -1084,6 +1120,9 @@
   if (ps_ind > 0) then
     call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
   endif
+  if (mslp_ind > 0) then
+    call copytogrdin(psg,grdin(:,levels(n3d) + mslp_ind,nb,ne))
+  endif
   if (.not. use_gfs_nemsio) call sigio_axdata(sigdata,iret)
 
   ! surface pressure tendency
@@ -1161,6 +1200,8 @@
 
      ! land sfc DA variables
      tmp2m_ind  = getindex(vars2d, 't2m')
+     u10m_ind  = getindex(vars2d, 'u10m')
+     v10m_ind  = getindex(vars2d, 'v10m')
      spfh2m_ind = getindex(vars2d, 'q2m')
      soilt1_ind = getindex(vars2d, 'st1')
      slc1_ind = getindex(vars2d, 'sl1')
@@ -1182,11 +1223,29 @@
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
      endif
+     if (u10m_ind > 0) then
+        call read_vardata(dset_sfc, 'ugrd10m', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading u10m'
+           call stop2(22)
+        endif
+        ug = reshape(values_2d,(/nlons*nlats/))
+        call copytogrdin(ug,grdin(:,levels(n3d) + u10m_ind,nb,ne))
+     endif
+     if (v10m_ind > 0) then
+        call read_vardata(dset_sfc, 'vgrd10m', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading v10m'
+           call stop2(22)
+        endif
+        ug = reshape(values_2d,(/nlons*nlats/))
+        call copytogrdin(ug,grdin(:,levels(n3d) + v10m_ind,nb,ne))
+     endif
      if (spfh2m_ind > 0) then
         call read_vardata(dset_sfc, 'spfh2m', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading spfh2m'
-                call stop2(22)
+           print *,'error reading spfh2m'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
@@ -1194,8 +1253,8 @@
      if (soilt1_ind > 0) then
         call read_vardata(dset_sfc, 'soilt1', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soilt1'
-                call stop2(22)
+           print *,'error reading soilt1'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
@@ -1203,8 +1262,8 @@
      if (soilt2_ind > 0) then
         call read_vardata(dset_sfc, 'soilt2', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soilt2'
-                call stop2(22)
+           print *,'error reading soilt2'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
@@ -1212,8 +1271,8 @@
      if (soilt3_ind > 0) then
         call read_vardata(dset_sfc, 'soilt3', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soilt3'
-                call stop2(22)
+           print *,'error reading soilt3'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
@@ -1221,8 +1280,8 @@
      if (soilt4_ind > 0) then
         call read_vardata(dset_sfc, 'soilt4', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soilt2'
-                call stop2(22)
+           print *,'error reading soilt2'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
@@ -1230,8 +1289,8 @@
      if (slc1_ind > 0) then
         call read_vardata(dset_sfc, 'soill1', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soill1'
-                call stop2(22)
+           print *,'error reading soill1'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
@@ -1239,8 +1298,8 @@
      if (slc2_ind > 0) then
         call read_vardata(dset_sfc, 'soill2', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soill2'
-                call stop2(22)
+           print *,'error reading soill2'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
@@ -1248,8 +1307,8 @@
      if (slc3_ind > 0) then
         call read_vardata(dset_sfc, 'soill3', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soill3'
-                call stop2(22)
+           print *,'error reading soill3'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
@@ -1257,8 +1316,8 @@
      if (slc4_ind > 0) then
         call read_vardata(dset_sfc, 'soill4', values_2d, errcode=iret)
         if (iret /= 0) then
-                print *,'error reading soill4'
-                call stop2(22)
+           print *,'error reading soill4'
+           call stop2(22)
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
@@ -2112,7 +2171,7 @@
                          write_attribute, quantize_data, has_var, has_attr
   use constants, only: grav
   use params, only: nbackgrounds,anlfileprefixes,fgfileprefixes,reducedgrid,&
-                    nccompress,write_ensmean
+                    nccompress,write_ensmean,fgsfcfileprefixes,anlsfcfileprefixes
   implicit none
 
   integer, intent(in) :: nanal1,nanal2
@@ -2123,12 +2182,12 @@
   real(r_single), dimension(npts,ndim,nbackgrounds,nanal2-nanal1+1), intent(inout) :: grdin
   logical, intent(in) :: no_inflate_flag
   logical:: use_full_hydro
-  character(len=500):: filenamein, filenameout
+  character(len=500):: filenamein, filenameout, filenamesfcin, filenamesfcout
   real(r_kind), allocatable, dimension(:,:) :: vmassdiv,dpanl,dpfg,pressi
   real(r_kind), allocatable, dimension(:,:) :: vmassdivinc
   real(r_kind), allocatable, dimension(:,:) :: ugtmp,vgtmp
   real(r_kind), allocatable,dimension(:) :: pstend1,pstend2,pstendfg,vmass
-  real(r_kind), dimension(nlons*nlats) :: ug,vg,uginc,vginc,psfg,psg
+  real(r_kind), dimension(nlons*nlats) :: ug,vg,uginc,vginc,psfg,psg,mslp
   real(r_kind), allocatable, dimension(:) :: delzb,work,values_1d
   real(r_kind), dimension(ndimspec) :: vrtspec,divspec
   real(r_single), allocatable, dimension(:,:,:) :: &
@@ -2141,7 +2200,7 @@
   real(r_kind) fhour
   type(sigio_head) sighead
   type(sigio_data) sigdata_inc
-  type(Dataset) :: dsfg, dsanl
+  type(Dataset) :: dsfg, dsanl, dbfg, dbanl
   character(len=3) charnanal
   character(nemsio_charkind),allocatable:: recname(:)
   character(nemsio_charkind) :: field
@@ -2158,9 +2217,11 @@
   type(sigio_data) sigdata
   type(nemsio_gfile) :: gfilein,gfileout
 
-  integer :: u_ind, v_ind, tv_ind, q_ind, oz_ind, cw_ind
-  integer :: ps_ind, pst_ind, nbits, dprs_ind, delz_ind
+  integer :: u_ind, v_ind, z_ind, tv_ind, tsen_ind, q_ind, oz_ind, cw_ind
+  integer :: ps_ind, pst_ind, nbits, dprs_ind, delz_ind, mslp_ind
   integer :: ql_ind, qi_ind, qr_ind, qs_ind, qg_ind
+  integer :: tmp2m_ind, u10m_ind, v10m_ind, slc1_ind, slc2_ind, slc3_ind, slc4_ind,&
+             soilt1_ind, soilt2_ind, soilt3_ind, soilt4_ind, spfh2m_ind
 
   integer k,krev,nt,ierr,iunitsig,nb,i,ne,nanal
 
@@ -2169,13 +2230,13 @@
 
   call set_ncio_file_flags(vars3d, n3d, vars2d, n2d, write_sfc_file, write_atm_file)
 
-  if (write_sfc_file ) then
-        ! adding the sfc increments requires adjusting several other variables. This is done is a separate
-        ! program.
-        if (nproc == 0) write(6,*)'gridio/writegriddata: not coded to write sfc analysis, will write increment for sfc fields'
-        no_vars3d=''
-        call  writeincrement(nanal1,nanal2,no_vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag)
-  endif
+  !if (write_sfc_file ) then
+  !      ! adding the sfc increments requires adjusting several other variables. This is done is a separate
+  !      ! program.
+  !      if (nproc == 0) write(6,*)'gridio/writegriddata: not coded to write sfc analysis, will write increment for sfc fields'
+  !      no_vars3d=''
+  !      call  writeincrement(nanal1,nanal2,no_vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag)
+  !endif
 
   nocompress = .true.
   if (nccompress) nocompress = .false.
@@ -2194,7 +2255,9 @@
 
   if (nanal == 0 .and. write_ensmean) then
      filenamein = trim(adjustl(datapath))//trim(adjustl(fgfileprefixes(nb)))//"ensmean"
+     filenamesfcin = trim(adjustl(datapath))//trim(adjustl(fgsfcfileprefixes(nb)))//"ensmean"
      filenameout = trim(adjustl(datapath))//trim(adjustl(anlfileprefixes(nb)))//"ensmean"
+     filenamesfcout = trim(adjustl(datapath))//trim(adjustl(anlsfcfileprefixes(nb)))//"ensmean"
   else
      if(no_inflate_flag) then
        filenameout = trim(adjustl(datapath))//trim(adjustl(anlfileprefixes(nb)))//"nimem"//charnanal
@@ -2202,6 +2265,8 @@
        filenameout = trim(adjustl(datapath))//trim(adjustl(anlfileprefixes(nb)))//"mem"//charnanal
      end if
      filenamein = trim(adjustl(datapath))//trim(adjustl(fgfileprefixes(nb)))//"mem"//charnanal
+     filenamesfcin = trim(adjustl(datapath))//trim(adjustl(fgsfcfileprefixes(nb)))//"mem"//charnanal
+     filenamesfcout = trim(adjustl(datapath))//trim(adjustl(anlsfcfileprefixes(nb)))//"mem"//charnanal
   endif
 
   if (use_gfs_nemsio) then
@@ -2260,24 +2325,23 @@
      endif
      nfhour = int(values_1d(1))
      nems_idvc=2
-     call read_attribute(dsfg, 'ak', values_1d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error reading ak'
-        call stop2(29)
+     if (has_attr(dsfg,'ak')) then
+        do k=1,nlevs+1
+            ! k=1 in values_1d is model top, flip so k=1 in ak is bottom
+            ak(nlevs-k+2) = 0.01_r_kind*values_1d(k)
+        enddo
+     else
+        ak = 0.
      endif
-     do k=1,nlevs+1
-        ! k=1 in values_1d is model top, flip so k=1 in ak is bottom
-        ak(nlevs-k+2) = 0.01_r_kind*values_1d(k)
-     enddo
-     call read_attribute(dsfg, 'bk', values_1d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error reading bk'
-        call stop2(29)
+     if (has_attr(dsfg, 'bk')) then
+        call read_attribute(dsfg, 'bk', values_1d,errcode=iret)
+        do k=1,nlevs+1
+           ! k=1 in values_1d is model top, flip so k=1 in ak is bottom
+           bk(nlevs-k+2) = values_1d(k)
+        enddo
+     else
+        bk = 0
      endif
-     do k=1,nlevs+1
-        ! k=1 in values_1d is model top, flip so k=1 in ak is bottom
-        bk(nlevs-k+2) = values_1d(k)
-     enddo
   else
      ! read in first-guess data.
      call sigio_srohdc(iunitsig,trim(filenamein), &
@@ -2299,11 +2363,14 @@
 
   u_ind   = getindex(vars3d, 'u')   !< indices in the control var arrays
   v_ind   = getindex(vars3d, 'v')   ! U and V (3D)
+  z_ind   = getindex(vars3d, 'z')   ! Z (3D)
   tv_ind  = getindex(vars3d, 'tv')  ! Tv (3D)
+  tsen_ind  = getindex(vars3d, 'tsen')  ! Tv (3D)
   q_ind   = getindex(vars3d, 'q')   ! Q (3D)
   dprs_ind  = getindex(vars3d, 'dprs')  ! pressure thickness (3D)
   delz_ind  = getindex(vars3d, 'delz')  ! height thickness (3D)
   ps_ind  = getindex(vars2d, 'ps')  ! Ps (2D)
+  mslp_ind  = getindex(vars2d, 'mslp')  ! Ps (2D)
   oz_ind  = getindex(vars3d, 'oz')  ! Oz (3D)
   cw_ind  = getindex(vars3d, 'cw')  ! CW (3D)
   ql_ind  = getindex(vars3d, 'ql')  ! QL (3D)
@@ -2549,15 +2616,26 @@
         print *,'error writing time units attribute'
         call stop2(29)
      endif
-     call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error reading pressfc'
-        call stop2(29)
+     if (mslp_ind > 0) then
+         call read_vardata(dsfg,'mslp',values_2d,errcode=iret)
+         if (iret /= 0) then
+            print *,'error reading mslp'
+            call stop2(29)
+         endif
+     else
+         call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
+         if (iret /= 0) then
+            print *,'error reading pressfc'
+            call stop2(29)
+         endif
      endif
      psfg = 0.01*reshape(values_2d,(/nlons*nlats/))
      ug = 0_r_kind
      if (ps_ind > 0) then
        call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),ug)
+     endif
+     if (mslp_ind > 0) then
+       call copyfromgrdin(grdin(:,levels(n3d) + mslp_ind,nb,ne),ug)
      endif
      if (has_var(dsfg,'dpres') .and. dprs_ind > 0) then
         ! compute ps increment from vertical sum of dpres increment
@@ -2573,10 +2651,18 @@
         psg = psfg + ug ! analysis pressure in mb.
         values_2d = 100.*reshape(psg,(/nlons,nlats/))
      endif
-     call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error writing pressfc'
-        call stop2(29)
+     if (mslp_ind > 0) then
+        call write_vardata(dsanl,'mslp',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error writing mslp'
+           call stop2(29)
+        endif
+     else
+        call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error writing pressfc'
+           call stop2(29)
+        endif
      endif
      !print *,'nanal,min/max psfg,min/max inc',nanal,minval(values_2d),maxval(values_2d),minval(ug),maxval(ug)
      if (has_var(dsfg,'dpres')) then
@@ -3143,10 +3229,18 @@
      endif
      allocate(tv_bg(nlons,nlats,nlevs),tv_anal(nlons,nlats,nlevs))
      tv_bg = ug3d * ( 1.0 + fv*vg3d ) !Convert T to Tv
-     call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
-     if (iret /= 0) then
-        print *,'error reading pressfc'
-        call stop2(29)
+     if (mslp_ind > 0) then
+        call read_vardata(dsfg,'mslp',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading mslp'
+           call stop2(29)
+        endif
+     else
+        call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading pressfc'
+           call stop2(29)
+        endif
      endif
      if (allocated(values_1d)) deallocate(values_1d)
      allocate(values_1d(nlons*nlats))
@@ -3261,6 +3355,7 @@
      endif
 
      ! write clwmr, icmr
+     if (has_var(dsfg,'clwmr') .and. has_var(dsfg,'icmr')) then
      call read_vardata(dsfg,'clwmr',ug3d,errcode=iret)
      if (iret /= 0) then
         print *,'error reading clwmr'
@@ -3335,8 +3430,10 @@
            call stop2(29)
         endif
      endif
+     endif
 
      ! write analysis ozone
+     if (has_var(dsfg, 'o3mr')) then
      call read_vardata(dsfg, 'o3mr', vg3d,errcode=iret)
      if (iret /= 0) then
         print *,'error reading o3mr'
@@ -3369,6 +3466,42 @@
      if (iret /= 0) then
         print *,'error writing o3mr'
         call stop2(29)
+     endif
+     endif
+
+     ! write analysis geopotential height
+     if (has_var(dsfg,'z')) then
+     call read_vardata(dsfg, 'z', vg3d,errcode=iret)
+     if (iret /= 0) then
+        print *,'error reading z'
+        call stop2(29)
+     endif
+     do k=1,nlevs
+        ug = 0_r_kind
+        if (z_ind > 0) then
+           call copyfromgrdin(grdin(:,levels(z_ind-1)+k,nb,ne),ug)
+        endif
+        vg3d(:,:,nlevs-k+1) = vg3d(:,:,nlevs-k+1) + &
+        reshape(ug,(/nlons,nlats/))
+     enddo
+     if (z_ind > 0) then
+        if (has_attr(dsfg, 'nbits', 'z') .and. .not. nocompress) then
+          call read_attribute(dsfg, 'nbits', nbits, 'z')
+          values_3d = vg3d
+          call quantize_data(values_3d, vg3d, nbits, compress_err)
+          call write_attribute(dsanl,&
+          'max_abs_compression_error',compress_err,'z',errcode=iret)
+          if (iret /= 0) then
+            print *,'error writing z attribute'
+            call stop2(29)
+          endif
+        endif
+     endif
+     call write_vardata(dsanl,'z',vg3d) ! write z
+     if (iret /= 0) then
+        print *,'error writing z'
+        call stop2(29)
+     endif
      endif
   endif
 
@@ -3586,6 +3719,208 @@
       endif
   endif
 
+  if ( write_sfc_file ) then
+
+     if ( .not.  use_gfs_ncio ) then
+        write(6,*) 'griddio/griddata for sfc update vars only coded for nc io'
+        call stop2(23)
+     endif
+     if ( reducedgrid ) then
+        write(6,*) "reducedgrid=T interpolation not valid for writing sfc files"
+        call stop2(22)
+     endif
+
+     ! land sfc DA variables
+     tmp2m_ind  = getindex(vars2d, 't2m')
+     u10m_ind  = getindex(vars2d, 'u10m')
+     v10m_ind  = getindex(vars2d, 'v10m')
+     spfh2m_ind = getindex(vars2d, 'q2m')
+     soilt1_ind = getindex(vars2d, 'st1')
+     slc1_ind = getindex(vars2d, 'sl1')
+     soilt2_ind = getindex(vars2d, 'st2')
+     slc2_ind = getindex(vars2d, 'sl2')
+     soilt3_ind = getindex(vars2d, 'st3')
+     slc3_ind = getindex(vars2d, 'sl3')
+     soilt4_ind = getindex(vars2d, 'st4')
+     slc4_ind = getindex(vars2d, 'sl4')
+
+     dbfg = open_dataset(filenamesfcin)
+     dbanl = create_dataset(filenamesfcout, dbfg, copy_vardata=.true., nocompress=nocompress, errcode=iret)
+     ! read in sfc vars, if requested
+     if (tmp2m_ind > 0) then
+        call read_vardata(dbfg, 'tmp2m', values_2d, errcode=iret)
+        if (iret /= 0) then
+            print *,'error reading tmp2m'
+            call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + tmp2m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'tmp2m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing tmp2m'
+           call stop2(22)
+        endif
+     endif
+     if (u10m_ind > 0) then
+        call read_vardata(dbfg, 'ugrd10m', values_2d, errcode=iret)
+        if (iret /= 0) then
+                print *,'error reading u10m'
+                call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + u10m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'ugrd10m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing u10m'
+           call stop2(22)
+        endif
+     endif
+     if (v10m_ind > 0) then
+        call read_vardata(dbfg, 'vgrd10m', values_2d, errcode=iret)
+        if (iret /= 0) then
+                print *,'error reading v10m'
+                call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + v10m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'vgrd10m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing v10m'
+           call stop2(22)
+        endif
+     endif
+     if (spfh2m_ind > 0) then
+        call read_vardata(dbfg, 'spfh2m', values_2d, errcode=iret)
+        if (iret /= 0) then
+            print *,'error reading spfh2m'
+            call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + spfh2m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'spfh2m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing spfh2m'
+           call stop2(22)
+        endif
+     endif
+     if (soilt1_ind > 0) then
+        call read_vardata(dbfg, 'soilt1', values_2d, errcode=iret)
+        if (iret /= 0) then
+            print *,'error reading soilt1'
+            call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + soilt1_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soilt1', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soilt1'
+           call stop2(22)
+        endif
+     endif
+     if (soilt2_ind > 0) then
+        call read_vardata(dbfg, 'soilt2', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soilt2'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + soilt2_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soilt2', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soilt2'
+           call stop2(22)
+        endif
+     endif
+     if (soilt3_ind > 0) then
+        call read_vardata(dbfg, 'soilt3', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soilt3'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + soilt3_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soilt3', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soilt3'
+           call stop2(22)
+        endif
+     endif
+     if (soilt4_ind > 0) then
+        call read_vardata(dbfg, 'soilt4', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soilt4'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + soilt1_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soilt4', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soilt4'
+           call stop2(22)
+        endif
+     endif
+     if (slc1_ind > 0) then
+        call read_vardata(dbfg, 'soill1', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soill1'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + slc1_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soill1', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soill1'
+           call stop2(22)
+        endif
+     endif
+     if (slc2_ind > 0) then
+        call read_vardata(dbfg, 'soill2', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soill2'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + slc2_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soill2', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soill2'
+           call stop2(22)
+        endif
+     endif
+     if (slc3_ind > 0) then
+        call read_vardata(dbfg, 'soill3', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soill3'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + slc3_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soill3', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soill3'
+           call stop2(22)
+        endif
+     endif
+     if (slc4_ind > 0) then
+        call read_vardata(dbfg, 'soill4', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading soill4'
+           call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + slc4_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'soill4', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing soill4'
+           call stop2(22)
+        endif
+     endif
+
+     call close_dataset(dbfg)
+     call close_dataset(dbanl)
+
+  endif ! sfc read
+
   end do backgroundloop ! loop over backgrounds to write out
   end do ensmemloop ! loop over ens members to write out
 
@@ -3647,10 +3982,10 @@
   integer(i_kind) :: lonvarid, latvarid, levvarid, pfullvarid, ilevvarid, &
                      hyaivarid, hybivarid, uvarid, vvarid, delpvarid, delzvarid, &
                      tvarid, sphumvarid, liqwatvarid, o3varid, icvarid, &
-                     tmp2mvarid, spfh2mvarid, soilt1varid, soilt2varid, &
+                     tmp2mvarid, u10mvarid, v10mvarid, spfh2mvarid, soilt1varid, soilt2varid, &
                      soilt3varid, soilt4varid, slc1varid, slc2varid, &
                      slc3varid, slc4varid, maskvarid
-  integer(i_kind) :: tmp2m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind, &
+  integer(i_kind) :: tmp2m_ind, u10m_ind, v10m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind, &
                      soilt4_ind,slc1_ind, slc2_ind, slc3_ind, slc4_ind
   integer(i_kind) :: iadateout
 
