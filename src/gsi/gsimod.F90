@@ -161,7 +161,7 @@
                          ntotensgrp,nsclgrp,naensgrp,ngvarloc,ntlevs_ens,naensloc, &
                          r_ensloccov4tim,r_ensloccov4var,r_ensloccov4scl,l_timloc_opt,&
                          vdl_scale,vloc_varlist,&
-                         global_spectral_filter_sd,assign_vdl_nml,parallelization_over_ensmembers
+                         global_spectral_filter_sd,assign_vdl_nml,parallelization_over_ensmembers,l_mgbf_loc
   use hybrid_ensemble_parameters,only : l_both_fv3sar_gfs_ens,n_ens_gfs,n_ens_fv3sar,weight_ens_gfs,weight_ens_fv3sar
   use rapidrefresh_cldsurf_mod, only: init_rapidrefresh_cldsurf, &
                             dfi_radar_latent_heat_time_period,metar_impact_radius,&
@@ -184,7 +184,7 @@
                             cld_bld_coverage,cld_clr_coverage,&
                             i_cloud_q_innovation,i_ens_mean,DTsTmax,&
                             i_T_Q_adjust,l_saturate_bkCloud,l_rtma3d,i_precip_vertical_check, &
-                            corp_howv, hwllp_howv
+                            corp_howv, hwllp_howv, corp_gust, hwllp_gust, oerr_gust
   use gsi_metguess_mod, only: gsi_metguess_init,gsi_metguess_final
   use gsi_chemguess_mod, only: gsi_chemguess_init,gsi_chemguess_final
   use tcv_mod, only: init_tcps_errvals,tcp_refps,tcp_width,tcp_ermin,tcp_ermax
@@ -529,6 +529,7 @@
 !                        - innov_use_model_fed=.true. :  Use FED from BG to calculate innovation.
 !                          this requires if_model_fed=.true. 
 !                          it works either an EnVar DA run or a GSI observer run.
+!  02-20-2024 yokota  - add MGBF-based localization
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -1454,6 +1455,7 @@
 !                             ^     ^     ^    ^     ^ 
 !                 s_ens_h  = v1L1  v2L1  v3L1  v1L2 v2L2
 !                 Then localization lengths will be assigned as above.
+!     l_mgbf_loc - if true, multi-grid beta filter is used for localization instead of recursive filter
 !
   namelist/hybrid_ensemble/l_hyb_ens,uv_hyb_ens,q_hyb_ens,aniso_a_en,generate_ens,n_ens,&
                 l_both_fv3sar_gfs_ens,n_ens_gfs,n_ens_fv3sar,weight_ens_gfs,weight_ens_fv3sar,nlon_ens,nlat_ens,jcap_ens,&
@@ -1464,7 +1466,7 @@
                 i_en_perts_io,l_ens_in_diff_time,ensemble_path,ens_fast_read,sst_staticB,limqens, &
                 nsclgrp,l_timloc_opt,ngvarloc,naensloc,r_ensloccov4tim,r_ensloccov4var,r_ensloccov4scl,&
                 vdl_scale,vloc_varlist,&
-                global_spectral_filter_sd,assign_vdl_nml,parallelization_over_ensmembers
+                global_spectral_filter_sd,assign_vdl_nml,parallelization_over_ensmembers,l_mgbf_loc
 
 ! rapidrefresh_cldsurf (options for cloud analysis and surface 
 !                             enhancement for RR appilcation  ):
@@ -1604,6 +1606,9 @@
 !                           = 0.42 meters (default)
 !      hwllp_howv    - real, background error de-correlation length scale of howv 
 !                           = 170,000.0 meters (default 170 km)
+!      corp_gust     - real, static background error of gust (stddev error)
+!      hwllp_gust    - real, background error de-correlation length scale of gust 
+!      oerr_gust     - real, observation error of gust
 !
   namelist/rapidrefresh_cldsurf/dfi_radar_latent_heat_time_period, &
                                 metar_impact_radius,metar_impact_radius_lowcloud, &
@@ -1625,7 +1630,7 @@
                                 cld_bld_coverage,cld_clr_coverage,&
                                 i_cloud_q_innovation,i_ens_mean,DTsTmax, &
                                 i_T_Q_adjust,l_saturate_bkCloud,l_rtma3d,i_precip_vertical_check, &
-                                corp_howv, hwllp_howv
+                                corp_howv, hwllp_howv, corp_gust, hwllp_gust, oerr_gust
 
 ! chem(options for gsi chem analysis) :
 !     berror_chem       - .true. when background  for chemical species that require
@@ -1986,6 +1991,18 @@
   if(filled_grid.and.half_grid) filled_grid=.false.
   regional=wrf_nmm_regional.or.wrf_mass_regional.or.twodvar_regional.or.nems_nmmb_regional .or. cmaq_regional
   regional=regional.or.fv3_regional.or.fv3_cmaq_regional
+
+! Force turn off MGBF-based localization except for regional application
+  if(.not.regional.and.l_mgbf_loc) then
+     l_mgbf_loc=.false.
+     if(mype==0) write(6,*)'GSIMOD: for global app, l_mgbf_loc is not applicable, reset l_mgbf_loc=',l_mgbf_loc
+  end if
+
+! Force turn off MGBF-based localization for lsqrtb=.true.
+  if(lsqrtb.and.l_mgbf_loc) then
+     l_mgbf_loc=.false.
+     if(mype==0) write(6,*)'GSIMOD: for lsqrtb=.true., l_mgbf_loc is not applicable, reset l_mgbf_loc=',l_mgbf_loc
+  end if
 
 ! Currently only able to have use_gfs_stratosphere=.true. for nems_nmmb_regional=.true.
   use_gfs_stratosphere=use_gfs_stratosphere.and.(nems_nmmb_regional.or.wrf_nmm_regional)   
