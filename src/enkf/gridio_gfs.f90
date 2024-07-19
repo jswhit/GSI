@@ -2475,6 +2475,7 @@
      nfhour = int(values_1d(1))
      nems_idvc=2
      if (has_attr(dsfg,'ak')) then
+        call read_attribute(dsfg, 'ak', values_1d,errcode=iret)
         do k=1,nlevs+1
             ! k=1 in values_1d is model top, flip so k=1 in ak is bottom
             ak(nlevs-k+2) = 0.01_r_kind*values_1d(k)
