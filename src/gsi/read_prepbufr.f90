@@ -1138,6 +1138,15 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               time_correction=zero
            end if
 
+! timeobs: obs time in prepbufr file (relative to bufr date)
+! time_correction:  bufr_date - anal date
+! toff: time offset from beginning of window
+! time:  obs time + time_correction (ob time relative to analysis date, if
+! different than bufr date)
+! t4dv: time relative  to beginning of window.
+! twindin: time window half width from namelist
+! ctwindin: time window half width from convinfo (per ob type)
+
            if (.not. (aircraft_t_bc .and. acft_profl_file)) then
               timeobs=real(real(hdr(4),r_single),r_double)
               t4dv=timeobs + toff
@@ -1155,6 +1164,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
            nc=tab(ntb,1)
            if (.not. (aircraft_t_bc .and. acft_profl_file)) then
+! l4densvar false for hourly DA
               if (l4dvar.or.l4densvar) then
                  if ((t4dv<zero.OR.t4dv>winlen) .and. .not.driftl) cycle loop_readsb ! outside time window
               else
@@ -1954,8 +1964,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                     end if
                  else
                     if(abs(time_drift) > ctwind(nc) .or. abs(time_drift) > twindin)then
-                       time_drift=timex
-                       if(abs(timex) > ctwind(nc) .or. abs(timex) > twindin) CYCLE LOOP_K_LEVS
+                       !time_drift=timex ! reset value to launch time?
+                       if(abs(time_drift) > ctwind(nc) .or. abs(time_drift) > twindin) CYCLE LOOP_K_LEVS
                     end if
                     t4dv = toff + time_drift
                  endif
