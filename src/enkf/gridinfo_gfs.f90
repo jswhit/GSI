@@ -67,7 +67,8 @@ integer,public :: ntrunc
 ! supported variable names in anavinfo
 character(len=max_varname_length),public, dimension(16) :: vars3d_supported = (/'u   ', 'v   ', 'z   ', 'tv  ', 'dprs', 'delz', 'q   ', 'oz  ', 'cw  ', 'tsen', 'prse', &
                                                                                 'ql  ', 'qi  ', 'qr  ', 'qs  ', 'qg  '/) 
-character(len=max_varname_length),public, dimension(16)  :: vars2d_supported = (/'ps ', 'mslp', 'pst', 'sst', 't2m', 'u10m', 'v10m', 'q2m', 'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
+character(len=max_varname_length),public, dimension(19)  :: vars2d_supported = (/'ps ', 'mslp', 'pst', 'sst', 't2m','pwat','u10m',&
+                                                                   'v10m', 'u100m', 'v100m', 'q2m', 'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
 character(len=max_varname_length),public, dimension(8)  :: vars2d_landonly = (/'st1', 'st2', 'st3', 'st4', 'sl1', 'sl2', 'sl3', 'sl4' /)
 ! supported variable names in anavinfo
 contains

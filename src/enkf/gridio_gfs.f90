@@ -708,6 +708,7 @@
   integer(i_kind) :: tsen_ind, ql_ind, qi_ind, prse_ind
   integer(i_kind) :: ps_ind, pst_ind, sst_ind, mslp_ind
   integer(i_kind) :: tmp2m_ind, u10m_ind, v10m_ind, spfh2m_ind, soilt1_ind, soilt2_ind, soilt3_ind
+  integer(i_kind) :: pwat_ind, u100m_ind, v100m_ind
   integer(i_kind) :: soilt4_ind,slc1_ind, slc2_ind, slc3_ind, slc4_ind
 
   integer(i_kind) :: k,iunitsig,iret,nb,i,idvc,nlonsin,nlatsin,nlevsin,ne,nanal
@@ -825,6 +826,7 @@
   allocate(pressi(nlons*nlats,nlevs+1))
   allocate(pslg(npts,nlevs))
   allocate(psg(nlons*nlats))
+  allocate(mslp(nlons*nlats))
   if (pst_ind > 0) allocate(vmassdiv(nlons*nlats,nlevs),pstend(nlons*nlats))
 
   if (use_gfs_nemsio) then
@@ -870,21 +872,23 @@
      enddo
      deallocate(ak,bk)
   else if (use_gfs_ncio) then
-     if (mslp_ind > 0) then
-        call read_vardata(dset, 'mslp', values_2d,errcode=iret)
-        if (iret/=0) then
-            print *,'error reading mslp in gridio_gfs, stopping...'
-            call stop2(31)
-        endif
-        psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
-     else
+     if (ps_ind > 0) then
         call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
-        if (iret/=0) then
+        if (iret/=0 .and. mslp_ind < 0) then
             print *,'error reading pressfc in gridio_gfs, stopping...'
             call stop2(31)
         endif
         psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
      endif
+     if ( mslp_ind > 0) then
+        call read_vardata(dset, 'mslp', values_2d,errcode=iret)
+        if (iret/=0) then
+            print *,'error reading mslp in gridio_gfs, stopping...'
+            call stop2(31)
+        endif
+        mslp = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
+     endif
+     if (ps_ind < 0 .and. mslp_ind > 0)  psg = mslp
      if (has_attr(dset, 'ak')) then
         call read_attribute(dset, 'ak', ak)
         call read_attribute(dset, 'bk', bk)
@@ -1256,7 +1260,7 @@
     call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
   endif
   if (mslp_ind > 0) then
-    call copytogrdin(psg,grdin(:,levels(n3d) + mslp_ind,nb,ne))
+    call copytogrdin(mslp,grdin(:,levels(n3d) + mslp_ind,nb,ne))
   endif
   if (.not. use_gfs_nemsio) call sigio_axdata(sigdata,iret)
 
@@ -1314,7 +1318,7 @@
   endif
 
   deallocate(pressi,pslg)
-  deallocate(psg)
+  deallocate(psg, mslp)
   if (pst_ind > 0) deallocate(vmassdiv,pstend)
   endif ! read_atm_file
 
@@ -1335,8 +1339,11 @@
 
      ! land sfc DA variables
      tmp2m_ind  = getindex(vars2d, 't2m')
+     pwat_ind  = getindex(vars2d, 'pwat')
      u10m_ind  = getindex(vars2d, 'u10m')
      v10m_ind  = getindex(vars2d, 'v10m')
+     u100m_ind  = getindex(vars2d, 'u100m')
+     v100m_ind  = getindex(vars2d, 'v100m')
      spfh2m_ind = getindex(vars2d, 'q2m')
      soilt1_ind = getindex(vars2d, 'st1')
      slc1_ind = getindex(vars2d, 'sl1')
@@ -1375,6 +1382,33 @@
         endif
         ug = reshape(values_2d,(/nlons*nlats/))
         call copytogrdin(ug,grdin(:,levels(n3d) + v10m_ind,nb,ne))
+     endif
+     if (u100m_ind > 0) then
+        call read_vardata(dset_sfc, 'ugrd100m', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading u100m'
+           call stop2(22)
+        endif
+        ug = reshape(values_2d,(/nlons*nlats/))
+        call copytogrdin(ug,grdin(:,levels(n3d) + u100m_ind,nb,ne))
+     endif
+     if (v100m_ind > 0) then
+        call read_vardata(dset_sfc, 'vgrd100m', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading v100m'
+           call stop2(22)
+        endif
+        ug = reshape(values_2d,(/nlons*nlats/))
+        call copytogrdin(ug,grdin(:,levels(n3d) + v100m_ind,nb,ne))
+     endif
+     if (pwat_ind > 0) then
+        call read_vardata(dset_sfc, 'pwat', values_2d, errcode=iret)
+        if (iret /= 0) then
+           print *,'error reading pwat'
+           call stop2(22)
+        endif
+        ug = reshape(values_2d,(/nlons*nlats/))
+        call copytogrdin(ug,grdin(:,levels(n3d) + pwat_ind,nb,ne))
      endif
      if (spfh2m_ind > 0) then
         call read_vardata(dset_sfc, 'spfh2m', values_2d, errcode=iret)
@@ -2336,7 +2370,7 @@
   real(r_kind), allocatable, dimension(:,:) :: vmassdivinc
   real(r_kind), allocatable, dimension(:,:) :: ugtmp,vgtmp
   real(r_kind), allocatable,dimension(:) :: pstend1,pstend2,pstendfg,vmass
-  real(r_kind), dimension(nlons*nlats) :: ug,vg,uginc,vginc,psfg,psg,mslp
+  real(r_kind), dimension(nlons*nlats) :: ug,vg,uginc,vginc,psfg,psg,mslp,mslpfg
   real(r_kind), allocatable, dimension(:) :: delzb,work,values_1d
   real(r_kind), dimension(ndimspec) :: vrtspec,divspec
   real(r_single), allocatable, dimension(:,:,:) :: &
@@ -2371,6 +2405,7 @@
   integer :: ql_ind, qi_ind, qr_ind, qs_ind, qg_ind
   integer :: tmp2m_ind, u10m_ind, v10m_ind, slc1_ind, slc2_ind, slc3_ind, slc4_ind,&
              soilt1_ind, soilt2_ind, soilt3_ind, soilt4_ind, spfh2m_ind
+  integer :: pwat_ind, u100m_ind, v100m_ind
 
   integer k,krev,nt,ierr,iunitsig,nb,i,ne,nanal
 
@@ -2766,26 +2801,27 @@
         print *,'error writing time units attribute'
         call stop2(29)
      endif
-     if (mslp_ind > 0) then
-         call read_vardata(dsfg,'mslp',values_2d,errcode=iret)
-         if (iret /= 0) then
-            print *,'error reading mslp'
-            call stop2(29)
-         endif
-     else
-         call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
-         if (iret /= 0) then
-            print *,'error reading pressfc'
-            call stop2(29)
-         endif
+
+     if (ps_ind > 0) then
+        call read_vardata(dsfg, 'pressfc', values_2d,errcode=iret)
+        if (iret/=0) then
+            print *,'error reading pressfc in gridio_gfs, stopping...'
+            call stop2(31)
+        endif
+        psfg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
      endif
-     psfg = 0.01*reshape(values_2d,(/nlons*nlats/))
+     if (mslp_ind > 0) then
+        call read_vardata(dsfg, 'mslp', values_2d,errcode=iret)
+        if (iret/=0) then
+            print *,'error reading mslp in gridio_gfs, stopping...'
+            call stop2(31)
+        endif
+        mslpfg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
+     endif
+     if (ps_ind < 0 .and. mslp_ind > 0)  psfg = mslpfg
      ug = 0_r_kind
      if (ps_ind > 0) then
        call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),ug)
-     endif
-     if (mslp_ind > 0) then
-       call copyfromgrdin(grdin(:,levels(n3d) + mslp_ind,nb,ne),ug)
      endif
      if (has_var(dsfg,'dpres') .and. dprs_ind > 0) then
         ! compute ps increment from vertical sum of dpres increment
@@ -2802,12 +2838,16 @@
         values_2d = 100.*reshape(psg,(/nlons,nlats/))
      endif
      if (mslp_ind > 0) then
+        call copyfromgrdin(grdin(:,levels(n3d) + mslp_ind,nb,ne),ug)
+        mslp = mslpfg + ug
+        values_2d = 100.*reshape(mslp,(/nlons,nlats/))
         call write_vardata(dsanl,'mslp',values_2d,errcode=iret)
         if (iret /= 0) then
            print *,'error writing mslp'
            call stop2(29)
         endif
-     else
+     endif
+     if (ps_ind > 0) then
         call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
         if (iret /= 0) then
            print *,'error writing pressfc'
@@ -3379,13 +3419,14 @@
      endif
      allocate(tv_bg(nlons,nlats,nlevs),tv_anal(nlons,nlats,nlevs))
      tv_bg = ug3d * ( 1.0 + fv*vg3d ) !Convert T to Tv
-     if (mslp_ind > 0) then
+     if (ps_ind < 0 .and. mslp_ind > 0) then
         call read_vardata(dsfg,'mslp',values_2d,errcode=iret)
         if (iret /= 0) then
            print *,'error reading mslp'
            call stop2(29)
         endif
-     else
+     endif
+     if (ps_ind > 0) then
         call read_vardata(dsfg,'pressfc',values_2d,errcode=iret)
         if (iret /= 0) then
            print *,'error reading pressfc'
@@ -3884,6 +3925,9 @@
      tmp2m_ind  = getindex(vars2d, 't2m')
      u10m_ind  = getindex(vars2d, 'u10m')
      v10m_ind  = getindex(vars2d, 'v10m')
+     u100m_ind  = getindex(vars2d, 'u100m')
+     v100m_ind  = getindex(vars2d, 'v100m')
+     pwat_ind = getindex(vars2d, 'pwat')
      spfh2m_ind = getindex(vars2d, 'q2m')
      soilt1_ind = getindex(vars2d, 'st1')
      slc1_ind = getindex(vars2d, 'sl1')
@@ -3936,6 +3980,48 @@
         call write_vardata(dbanl, 'vgrd10m', values_2d, errcode=iret) 
         if (iret /= 0) then
            print *,'error writing v10m'
+           call stop2(22)
+        endif
+     endif
+     if (u100m_ind > 0) then
+        call read_vardata(dbfg, 'ugrd100m', values_2d, errcode=iret)
+        if (iret /= 0) then
+                print *,'error reading u100m'
+                call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + u100m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'ugrd100m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing u100m'
+           call stop2(22)
+        endif
+     endif
+     if (v100m_ind > 0) then
+        call read_vardata(dbfg, 'vgrd100m', values_2d, errcode=iret)
+        if (iret /= 0) then
+                print *,'error reading v100m'
+                call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + v100m_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'vgrd100m', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing v100m'
+           call stop2(22)
+        endif
+     endif
+     if (pwat_ind > 0) then
+        call read_vardata(dbfg, 'pwat', values_2d, errcode=iret)
+        if (iret /= 0) then
+            print *,'error reading pwat'
+            call stop2(22)
+        endif
+        call copyfromgrdin(grdin(:,levels(n3d) + pwat_ind,nb,ne),ug)
+        values_2d = values_2d + reshape(ug,(/nlons,nlats/))
+        call write_vardata(dbanl, 'pwat', values_2d, errcode=iret) 
+        if (iret /= 0) then
+           print *,'error writing pwat'
            call stop2(22)
         endif
      endif
