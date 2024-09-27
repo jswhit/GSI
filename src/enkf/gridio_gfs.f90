@@ -2837,6 +2837,13 @@
         psg = psfg + ug ! analysis pressure in mb.
         values_2d = 100.*reshape(psg,(/nlons,nlats/))
      endif
+     if (ps_ind > 0) then
+        call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
+        if (iret /= 0) then
+           print *,'error writing pressfc'
+           call stop2(29)
+        endif
+     endif
      if (mslp_ind > 0) then
         call copyfromgrdin(grdin(:,levels(n3d) + mslp_ind,nb,ne),ug)
         mslp = mslpfg + ug
@@ -2844,13 +2851,6 @@
         call write_vardata(dsanl,'mslp',values_2d,errcode=iret)
         if (iret /= 0) then
            print *,'error writing mslp'
-           call stop2(29)
-        endif
-     endif
-     if (ps_ind > 0) then
-        call write_vardata(dsanl,'pressfc',values_2d,errcode=iret)
-        if (iret /= 0) then
-           print *,'error writing pressfc'
            call stop2(29)
         endif
      endif
