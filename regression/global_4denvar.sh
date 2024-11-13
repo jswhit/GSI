@@ -61,7 +61,7 @@ suffix=tm00.bufr_d
 dumpges=gdas
 COMROOTgfs=$casesdir/gfs/prod
 datobs=$COMROOTgfs/$dumpobs.$PDYa/${cyca}/obs
-dathis=$COMROOTgfs/$dumpges.$PDYg/${cycg}/model_data/atmos/history
+dathis=$COMROOTgfs/$dumpges.$PDYg/${cycg}/model/atmos/history
 datanl=$COMROOTgfs/gdas.$PDYg/${cycg}/analysis/atmos
 datens=$COMROOTgfs/enkfgdas.$PDYg/${cycg}
 
@@ -128,6 +128,8 @@ errtable=$fixgsi/prepobs_errtable.global
 aeroinfo=$fixgsi/global_aeroinfo.txt
 atmsbeaminfo=$fixgsi/atms_beamwidth.txt
 cloudyinfo=$fixgsi/cloudy_radiance_info.txt
+cris_clddet=$fixgsi/CRIS_CLDDET.NL
+iasi_clddet=$fixgsi/IASI_CLDDET.NL
 
 emiscoef_IRwater=$fixcrtm/Nalli.IRwater.EmisCoeff.bin
 emiscoef_IRice=$fixcrtm/NPOESS.IRice.EmisCoeff.bin
@@ -169,6 +171,8 @@ $ncp $errtable ./errtable
 $ncp $aeroinfo ./aeroinfo
 $ncp $atmsbeaminfo ./atms_beamwidth.txt
 $ncp $cloudyinfo   ./cloudy_radiance_info.txt
+$ncp $cris_clddet ./CRIS_CLDDET.NL
+$ncp $iasi_clddet ./IASI_CLDDET.NL
 
 $ncp $bufrtable ./prepobs_prep.bufrtable
 $ncp $bftab_sst ./bftab_sstphr
@@ -287,7 +291,7 @@ $nln $dathis/${prefix_ges}.atmf007.nc         ./sigf07
 $nln $dathis/${prefix_ges}.atmf008.nc         ./sigf08
 $nln $dathis/${prefix_ges}.atmf009.nc         ./sigf09
 
-$nln $datens/ensstat/model_data/atmos/history/${prefix_ens}.sfcf006.ensmean.nc         ./sfcf06_anlgrid
+$nln $datens/ensstat/model/atmos/history/${prefix_ens}.sfcf006.ensmean.nc         ./sfcf06_anlgrid
 
 export ENS_PATH='./ensemble_data/'
 mkdir -p ${ENS_PATH}
@@ -297,7 +301,7 @@ for fh in $flist; do
     imem=1
     while [[ $imem -le $NMEM_ENKF ]]; do
 	member="mem"`printf %03i $imem`
-	$nln $datens/$member/model_data/atmos/history/$sigens ${ENS_PATH}sigf${fh}_ens_${member}
+	$nln $datens/$member/model/atmos/history/$sigens ${ENS_PATH}sigf${fh}_ens_${member}
 	(( imem = $imem + 1 ))
     done
 done
