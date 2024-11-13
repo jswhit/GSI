@@ -213,7 +213,7 @@ allocate(grdin(npts,ncdim,nbackgrounds,nanals_per_iotask))
 ! if only updating the sfc fields, qsat will not be calculated in readgriddata
 ! only allocate if needed.
 q_ind = getindex(cvars3d, 'q')
-if (q_ind > 0)  allocate(qsat(npts,nlevs,nbackgrounds,nanals_per_iotask))
+allocate(qsat(npts,nlevs,nbackgrounds,nanals_per_iotask))
 if (paranc) then
    if (nproc == 0) t1 = mpi_wtime()
    call readgriddata_pnc(cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,nbackgrounds, &

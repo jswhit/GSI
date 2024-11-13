@@ -616,7 +616,7 @@ do niter=1,numiter
       end if
       if (nf2 > 0) then
           dbz_ind = getindex(cvars3d, 'dbz')
-!$omp parallel do schedule(dynamic,1) private(ii,i,nb,obt,nn,nnn,nlev,lnsig,kfgain,ens_tmp,taper1,taper3,taperv)
+!!$omp parallel do schedule(dynamic,1) private(ii,i,nb,obt,nn,nnn,nlev,lnsig,kfgain,ens_tmp,taper1,taper3,taperv)
           do ii=1,nf2 ! loop over nearby horiz grid points
              do nb=1,nbackgrounds ! loop over background time levels
              obt = abs(obtime(nob)-(nhr_anal(nb)-fhr_assim))
@@ -676,7 +676,7 @@ do niter=1,numiter
              endif
           end do ! end loop over background time levels. 
           end do ! end loop over nearby horiz grid points
-!$omp end parallel do
+!!$omp end parallel do
       end if ! if .not. lastiter or no close grid points
 
       t5 = t5 + mpi_wtime() - t1
@@ -684,7 +684,7 @@ do niter=1,numiter
 
       if (nf > 0) then
         ! find indices of 'close' obs.
-!$omp parallel do  schedule(dynamic,1) private(nob1,nob2,nob3,lnsig,obt,kfgain)
+!!$omp parallel do  schedule(dynamic,1) private(nob1,nob2,nob3,lnsig,obt,kfgain)
         do nob1=1,nf
            ! Note: only really need to do obs that have not yet been processed unless sat data
            ! for bias correction update.
@@ -753,7 +753,7 @@ do niter=1,numiter
               end if
            end if
         end do
-!$omp end parallel do
+!!$omp end parallel do
 
       end if ! no close obs.
 
@@ -765,7 +765,7 @@ do niter=1,numiter
   ! make sure posterior perturbations still have zero mean.
   ! (roundoff errors can accumulate)
   if (lastiter .and. .not. lupd_obspace_serial) then
-     !$omp parallel do schedule(dynamic) private(npt,nb,i)
+     !!$omp parallel do schedule(dynamic) private(npt,nb,i)
      do npt=1,npts_max
         do nb=1,nbackgrounds
            do i=1,ncdim
@@ -774,14 +774,14 @@ do niter=1,numiter
            end do
         end do
      enddo
-     !$omp end parallel do
+     !!$omp end parallel do
   endif
-  !$omp parallel do schedule(dynamic) private(nob)
+  !!$omp parallel do schedule(dynamic) private(nob)
   do nob=1,nobs_max
      anal_obchunk(1:nanals,nob) = anal_obchunk(1:nanals,nob)-&
      sum(anal_obchunk(1:nanals,nob),1)*r_nanals
   enddo
-  !$omp end parallel do
+  !!$omp end parallel do
 
   tend = mpi_wtime()
   if (nproc .eq. 0) then
