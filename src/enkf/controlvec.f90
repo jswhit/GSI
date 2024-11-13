@@ -262,6 +262,8 @@ real(r_single), allocatable, dimension(:,:) :: grdin_mean_tmp,tmp2d
 real(r_single), allocatable, dimension(:) :: work1d
 real(r_single), allocatable, dimension(:,:,:,:) :: grdin_mean
 
+character(len=max_varname_length), dimension(nc3d) :: no_vars3d
+
 if (nproc <= ntasks_io-1) then
 
    ! scale q by ensemble qsat, prior to averaging
@@ -344,6 +346,9 @@ if (nproc <= ntasks_io-1) then
            else
               call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
            end if
+        elseif (nc2d>0) then  ! always write sfc mean increment for land analysis
+           no_vars3d=''
+           call writeincrement(0,0,no_vars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
         endif
         deallocate(grdin_mean)
         t2 = mpi_wtime()
@@ -367,6 +372,9 @@ if (paranc) then
         else
            call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
         end if
+     elseif (nc2d>0) then  ! always write sfc mean increment
+        no_vars3d=''
+        call writeincrement(0,0,no_vars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
      endif
      deallocate(grdin_mean)
      t2 = mpi_wtime()
